@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+{% load crispy_forms_tags %}
+<h3>{{emailuser|title}}</h3>
+{% crispy form form.helper %}
+<Hr />
+{% crispy form_inline %}
+<Hr />
+{% crispy form_inline.form %}
+{% endblock %}

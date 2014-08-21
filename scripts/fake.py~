@@ -1,0 +1,4 @@
+from vutman.models import EmailUser
+
+
+print hello

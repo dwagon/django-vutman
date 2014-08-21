@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+        <h1>Virtual User Table MANager</h1>
+	<hr />
+        <p>
+	  This example is a quick exercise to illustrate how the default, static navbar and fixed to top navbar work.
+	  It includes the responsive CSS and HTML, so it also adapts to your viewport and device.
+	</p>
+	<form action="/vutman/search/" method="post">
+	  {% csrf_token %}
+	<p>
+	  <input type="text" class="form-control input-lg" placeholder="Search" value="{{query_string}}" name="q">
+	</p>
+        <p>
+	  <div class="checkbox">
+	    <label>
+	      <input type="checkbox" name="alias" checked>Aliases
+	    </label>
+	    <label>
+	      <input type="checkbox" name="user" checked>Users
+	    </label>
+	    <!--
+	    <label>
+	      <input type="checkbox" name="domain">Domains
+	    </label>
+	    <label>
+	      <input type="checkbox" name="server">Servers
+	    </label>
+	    -->
+	  </div>
+          <input type="submit" class="btn btn-lg btn-primary" value="submit" />
+        </p>
+	</form>
+      </div>
+      
+      userlist: {{user_list}}
+      alias: {{alias_list}}
+
+{% endblock %}

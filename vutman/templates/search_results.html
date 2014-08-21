@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+	<ul>
+	{% for user in user_list %}
+	  <li>
+	   <a href="{{user.get_absolute_url}}">
+	    {{user}}
+	   </a>
+	  </li>
+	{% endfor %}
+	{% for alias in alias_list %}
+	  <li>
+	   <a href="{{alias.get_absolute_url}}">
+	    {{alias}}
+	   </a>
+	  </li>
+	{% endfor %}
+	</ul>
+{% endblock %}
