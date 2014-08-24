@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
+<h3>{{user_list|length}} User(s)</h3>
+
 	<ul>
 	{% for user in user_list %}
 	  <li>
@@ -8,12 +10,16 @@
 	   </a>
 	  </li>
 	{% endfor %}
-	{% for alias in alias_list %}
-	  <li>
-	   <a href="{{alias.get_absolute_url}}">
-	    {{alias}}
-	   </a>
-	  </li>
-	{% endfor %}
 	</ul>
+
+<h3>{{alias_list|length}} Alias(es)</h3>
+<ul>
+  {% for alias in alias_list %}
+  <li>
+    <a href="{{alias.username.get_absolute_url}}">
+      {{alias}}: {{alias.username}}
+    </a>
+  </li>
+  {% endfor %}
+</ul>
 {% endblock %}

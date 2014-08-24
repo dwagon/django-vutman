@@ -2,17 +2,27 @@ from vutman.models import EmailUser, EmailServer, EmailAlias, EmailDomain
 import random
 
 
-def run():
-    FAKE_SERVERS = 5
-    FAKE_USERS = 20
+def run(numbers=1):
+    try:
+        numbers = int(numbers)
+    except Exception:
+        numbers = 2
+
+    FAKE_SERVERS = int(numbers)
+    FAKE_USERS = FAKE_SERVERS * 20
     emailserver_list = []
     emaildomain_list = []
+
     for i in range(FAKE_SERVERS):
-        o = EmailServer.objects.create(email_server="server_%d" % i)
+        o = EmailServer.objects.create(
+            email_server="server_%d" % i
+        )
         o.save()
         emailserver_list.append(o)
 
-        o = EmailDomain.objects.create(domain_name="domain_%d" % i)
+        o = EmailDomain.objects.create(
+            domain_name="domain_%d" % i
+        )
         o.save()
         emaildomain_list.append(o)
 

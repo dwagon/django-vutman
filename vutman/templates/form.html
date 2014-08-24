@@ -1,10 +1,65 @@
 {% extends "base.html" %}
 {% block content %}
 {% load crispy_forms_tags %}
-<h3>{{emailuser|title}}</h3>
+<h3>{{emailuser.fullname|title}}</h3>
 {% crispy form form.helper %}
 <Hr />
-{% crispy form_inline %}
-<Hr />
-{% crispy form_inline.form %}
+{% for f in formset %}
+
+<form class="form-inline" role="form" method="post" action="/vutman/alias/{{f.initial.id|default:'new'}}/">
+  {% csrf_token %}
+  <input type="hidden" name="username" value="{{emailuser.pk}}">
+  {{f.state}}
+  <div class="form-group">
+    <label class="sr-only" for="exampleInputEmail2">Alias</label>
+    <input type="input" class="form-control" id="exampleInputEmail2" placeholder="Enter email"
+	   value="{{f.alias_name.value|default:''}}" name="alias_name">
+  </div>
+  <div class="form-group">
+    <div class="input-group">
+      <div class="input-group-addon">@</div>
+      {{f.email_domain}}
+    </div>
+  </div>
+  <button type="submit" class="btn btn-default">Save</button>
+</form>
+
+<!--
+<form class="form-inline" role="form" method="post" action="/vutman/alias/{{f.initial.id}}/delete/">
+  <button type="submit" class="btn btn-warning">Delete</button>
+<form>
+-->
+
+<Br />
+<Br />
+{% endfor %}
+<!--
+<form class="form-inline" role="form" method="post" action="/vutman/alias/new/">
+  {% csrf_token %}
+  {{formset.0.state}}
+  <input type="hidden" name="username" value="{{formset.0.username.value}}">
+  <div class="form-group">
+    <label class="sr-only" for="exampleInputEmail2">Alias</label>
+    <input type="input" class="form-control" id="exampleInputEmail2" placeholder="Enter email"
+	   value="" name="alias_name">
+  </div>
+  <div class="form-group">
+    <div class="input-group">
+      <div class="input-group-addon">@</div>
+     <select id="id_email_domain" name="email_domain">
+       <option value="">---------</option>
+       {% for domain in domain_list %}
+       <option value="{{domain.pk}}">{{domain}}</option>
+      {% endfor %}
+     </select>
+
+    </div>
+  </div>
+  <button type="submit" class="btn btn-default">Save</button>
+</form>
+-->
+<Br />
+<Br />
 {% endblock %}
+
+

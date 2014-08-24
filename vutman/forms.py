@@ -17,14 +17,18 @@ class CrispyForm(ModelForm):
 class EmailUserForm(CrispyForm):
     class Meta:
         model = EmailUser
+        exclude = ['username', 'active_directory_basedn']
 
 from django.forms.models import inlineformset_factory
 
 EmailAliasFormSet = inlineformset_factory(
     EmailUser, EmailAlias, fk_name="username",
-    extra=2, can_delete=True
+    extra=1, can_delete=True
 )
 
-class EmailAliasForm(ModelForm):
+
+class EmailAliasForm(CrispyForm):
     class Meta:
         model = EmailAlias
+        # exclude = ['username']
+        # readonly_fields = ('username',)
