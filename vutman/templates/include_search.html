@@ -1,0 +1,33 @@
+<div align="center">
+<h1>Virtual User Table MANager</h1>
+<form action="/vutman/search/" method="get">
+  <p>
+    <input type="text" class="form-control input-lg search" placeholder="Search or Quick filter" value="{{query_string}}" name="q">
+  </p>
+  <p>
+    <div class="checkbox">
+      <label>
+	<input type="checkbox" name="alias" checked>Aliases
+      </label>
+      <label>
+	<input type="checkbox" name="user" checked>Users
+      </label>
+      <label>
+	<input type="checkbox" name="deleted">Deleted & Disabled
+      </label>
+      <label>
+	<input type="checkbox" name="fast" checked>fast search
+      </label>
+      <!--
+	  <label>
+	    <input type="checkbox" name="domain">Domains
+	  </label>
+	  <label>
+	    <input type="checkbox" name="server">Servers
+	  </label>
+	  -->
+    </div>
+    <input type="submit" class="btn btn-lg btn-primary" value="submit" />
+  </p>
+</form>
+</div>

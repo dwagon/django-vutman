@@ -6,16 +6,24 @@ from vutman.search_indexes import search_emailaliases, search_emailuser
 from vutman.forms import EmailUserForm, EmailAliasForm, EmailAliasFormSet
 from itertools import chain
 
+NUMBER_OF_RECORDS_ON_INDEX_PAGE = 28
+
 
 def render_virtual_user_table(request):
-    for alias in EmailAlias.objects.all():
-        print alias
-    return redirect("/vutman")
+    alias_list = EmailAlias.objects.all().order_by('username').iterator()
+
+    return render_to_response(
+        "emailalias_text.txt",
+        {
+            'alias_list': alias_list,
+        },
+        context_instance=RequestContext(request)
+    )
 
 
 def index(request):
-    user_list = EmailUser.objects.all().order_by('-last_modified')[:10]
-    alias_list = EmailAlias.objects.all().order_by('-last_modified')[:10]
+    user_list = EmailUser.objects.all().order_by('-last_modified')[:NUMBER_OF_RECORDS_ON_INDEX_PAGE]
+    alias_list = EmailAlias.objects.all().order_by('-last_modified')[:NUMBER_OF_RECORDS_ON_INDEX_PAGE]
 
     return render_to_response(
         "index.html",
@@ -101,12 +109,10 @@ def search(request, q=None):
     all_list = []
 
     if 'alias' in request.GET:
-        emailalias_query = search_emailaliases(query_string)
-        alias_list = EmailAlias.objects.filter(emailalias_query)
+        alias_list = search_emailaliases(query_string)
 
     if 'user' in request.GET:
-        emailuser_query = search_emailuser(query_string)
-        user_list = EmailUser.objects.filter(emailuser_query)
+        user_list = search_emailuser(query_string)
 
     all_list = list(chain(user_list, alias_list))
 
@@ -140,7 +146,8 @@ def search(request, q=None):
         {
             'query_string': query_string,
             'user_list': user_list,
-            'alias_list': alias_list
+            'alias_list': alias_list,
+            'all_list': all_list
         },
         context_instance=RequestContext(request)
     )

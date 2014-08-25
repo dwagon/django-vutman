@@ -2,6 +2,8 @@ from vutman.models import EmailAlias, EmailUser
 from django.db.models import Q
 from itertools import chain
 
+MAX_SEARCH_RESULTS = 200
+
 
 def make_search_query(query_string, search_fields):
     # Query to search for every search term
@@ -39,7 +41,7 @@ def _search_emailaliases(query_string):
 
 def search_emailaliases(query_string):
     query = _search_emailaliases(query_string)
-    return EmailAlias.objects.filter(query)
+    return EmailAlias.objects.filter(query)[0:MAX_SEARCH_RESULTS]
 
 
 def _search_emailuser(query_string):
@@ -54,7 +56,7 @@ def _search_emailuser(query_string):
 
 def search_emailuser(query_string):
     query = _search_emailuser(query_string)
-    return EmailUser.objects.filter(query)
+    return EmailUser.objects.filter(query)[0:MAX_SEARCH_RESULTS]
 
 
 def search_from_request(request, q=None):

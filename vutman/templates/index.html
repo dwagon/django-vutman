@@ -1,36 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Virtual User Table MANager</h1>
-<hr />
-<form action="/vutman/search/" method="get">
-  <p>
-    <input type="text" class="form-control input-lg search" placeholder="Search" value="{{query_string}}" name="q">
-  </p>
-  <p>
-    <div class="checkbox">
-      <label>
-	<input type="checkbox" name="alias" checked>Aliases
-      </label>
-      <label>
-	<input type="checkbox" name="user" checked>Users
-      </label>
-      <label>
-	<input type="checkbox" name="deleted">Deleted & Disabled
-      </label>
-      <!--
-	  <label>
-	    <input type="checkbox" name="domain">Domains
-	  </label>
-	  <label>
-	    <input type="checkbox" name="server">Servers
-	  </label>
-	  -->
-    </div>
-    <input type="submit" class="btn btn-lg btn-primary" value="submit" />
-  </p>
-</form>
+{% include "include_search.html" %}
 
-<div>
+<div class="row">
+<div class="col-lg-6">
   <h4>Last modfied users</h4>
   <ul class="searchlist">
 {% for user in user_list %}
@@ -41,6 +14,8 @@
     </li>
 {% endfor %}
   </ul>
+</div>
+<div class="col-lg-6">
   <h4>Last modfied aliases</h4>
 
   <ul class="searchlist">
@@ -52,6 +27,7 @@
     </li>
 {% endfor %}
   </ul>
+</div>
 </div>
 
 {% endblock %}

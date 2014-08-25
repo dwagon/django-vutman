@@ -1,17 +1,34 @@
 {% extends "base.html" %}
 {% block content %}
 
+{% include "include_search.html" %}
 
-<input type="text" class="search" id="result-search" />
-<ul id="theList" class="searchlist" >
+{% if alias_list|length == 200 or user_list|length == 200 %}
+<h3>Bad search, How about you try it again</h3>
+{% else %}
+<h4>{{all_list|length}} results found</h5>
+{% endif %}
+
+<div class="row">
+{% if user_list %}
+<div class="col-lg-6">
+<h3>Users</h3>
+<ul class="searchlist" >
   {% for user in user_list %}
   <li>
     <a href="{{user.get_absolute_url}}">
-      {{user}} {{user.fullname}}
+      <strong> {{user}} </strong> {{user.fullname}}
     </a>
   </li>
   {% endfor %}
+</ul>
+</div>
+{% endif %}
 
+{% if alias_list %}
+<div class="col-lg-6">
+  <h3>Aliases</h3>
+<ul class="searchlist" >
   {% for alias in alias_list %}
   <li>
     <a href="{{alias.username.get_absolute_url}}">
@@ -20,7 +37,8 @@
   </li>
   {% endfor %}
 </ul>
-
-
+</div>
+{% endif %}
+</div>
 
 {% endblock %}
