@@ -1,0 +1,57 @@
+from django.test import TestCase
+from todo.models import Person, Links, ToDo, Item, Category
+from django.db import IntegrityError
+
+
+class PersonTestCase(TestCase):
+    def setUp(self):
+        self.bob = Person.objects.create(title="bob", gender="M")
+        self.sue = Person.objects.create(title="sue", gender="F")
+
+        person_1 = Person.objects.create(title="link1")
+        person_2 = Person.objects.create(title="link2")
+        self.link = Links.objects.create(from_person=person_1,
+                                         to_person=person_2)
+
+    def test_duplicate_users(self):
+        Person.objects.create(title="duplicate_user")
+        with self.assertRaises(IntegrityError):
+            Person.objects.create(title="duplicate_user")
+
+    def test_preset_gender(self):
+        self.assertEqual(self.bob.gender, 'M')
+        self.assertEqual(self.sue.gender, 'F')
+
+    def test_default_polgamy(self):
+        self.assertEqual(self.bob.polygamy, False)
+
+    def test_setting_gender(self):
+        self.assertEqual(self.bob.gender, 'M')
+        self.bob.gender = 'F'
+        self.assertEqual(self.bob.gender, 'F')
+
+    def test_person_has_linkingcode(self):
+        bob_pass = self.bob.link_pass
+        sue_pass = self.sue.link_pass
+        self.assertEqual(len(bob_pass), 8)
+        self.assertEqual(len(sue_pass), 8)
+
+    def test_link_lookup(self):
+        bob_pass = self.bob.link_pass
+        sue_pass = self.sue.link_pass
+
+        bob = Person.objects.get(link_pass=bob_pass)
+        sue = Person.objects.get(link_pass=sue_pass)
+
+        self.assertEqual(self.bob, bob)
+        self.assertEqual(self.sue, sue)
+
+    def test_add_todo(self):
+        cat = Category.objects.create(title="cat_name")
+        cat.save()
+        item = Item.objects.create(title="test", category=cat)
+        item.save()
+
+        self.assertEqual(len(self.bob.items.all()), 0)
+        ToDo.objects.create(person=self.bob, item=item)
+        self.assertEqual(len(self.bob.items.all()), 1)

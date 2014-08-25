@@ -4,7 +4,7 @@
 <hr />
 <form action="/vutman/search/" method="get">
   <p>
-    <input type="text" class="form-control input-lg" placeholder="Search" value="{{query_string}}" name="q">
+    <input type="text" class="form-control input-lg search" placeholder="Search" value="{{query_string}}" name="q">
   </p>
   <p>
     <div class="checkbox">
@@ -32,20 +32,21 @@
 
 <div>
   <h4>Last modfied users</h4>
-  <ul>
+  <ul class="searchlist">
 {% for user in user_list %}
     <li>
-      <a href="{{ user.get_absolute_url }}">{{user.fullname}}</a>
+      <a href="{{ user.get_absolute_url }}">{{user.username}}: {{user.fullname}}</a>
       {{user.last_modified}}
       {{user.last_modified_by}}
     </li>
 {% endfor %}
   </ul>
   <h4>Last modfied aliases</h4>
-  <ul>
+
+  <ul class="searchlist">
 {% for alias in alias_list %}
     <li>
-      <a href="{{ alias.username.get_absolute_url }}">{{alias}}</a>
+      <a href="{{ alias.username.get_absolute_url }}">{{alias}}: {{alias.username}}</a>
       {{alias.last_modified}}
       {{alias.last_modified_by}}
     </li>

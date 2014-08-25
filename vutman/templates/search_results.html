@@ -1,25 +1,26 @@
 {% extends "base.html" %}
 {% block content %}
-<h3>{{user_list|length}} User(s)</h3>
 
-	<ul>
-	{% for user in user_list %}
-	  <li>
-	   <a href="{{user.get_absolute_url}}">
-	    {{user}}
-	   </a>
-	  </li>
-	{% endfor %}
-	</ul>
 
-<h3>{{alias_list|length}} Alias(es)</h3>
-<ul>
+<input type="text" class="search" id="result-search" />
+<ul id="theList" class="searchlist" >
+  {% for user in user_list %}
+  <li>
+    <a href="{{user.get_absolute_url}}">
+      {{user}} {{user.fullname}}
+    </a>
+  </li>
+  {% endfor %}
+
   {% for alias in alias_list %}
   <li>
     <a href="{{alias.username.get_absolute_url}}">
-      {{alias}}: {{alias.username}}
+      {{alias}}: {{alias.username}} {{alias.username.fullname}}
     </a>
   </li>
   {% endfor %}
 </ul>
+
+
+
 {% endblock %}

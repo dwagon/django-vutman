@@ -1,0 +1,26 @@
+from django.test import TestCase
+from vutman.models import EmailAlias, EmailUser, EmailDomain, EmailServer
+from vutman.search_indexes import make_search_query, search_emailaliases, \
+    search_emailuser
+
+
+
+class SimpleTestCase(TestCase):
+    def setUp(self):
+        self.server = EmailServer.objects.create(email_server="server")
+        self.domain = EmailDomain.objects.create(domain_name="domain")
+        self.user = EmailUser.objects.create(
+            username="username",
+            fullname="first last",
+            email_server=self.server,
+            active_directory_basedn="basedn"
+        )
+        self.alias = EmailAlias.objects.create(
+            alias_name="alias",
+            username=self.user,
+            email_domain=self.domain
+        )
+
+    def test_duplicate_users(self):
+        server1 = EmailServer.objects.create(email_server="server1")
+        server2 = EmailServer.objects.create(email_server="server2")

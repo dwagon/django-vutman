@@ -1,3 +1,3 @@
-{{ object.title }}
-{{ object.user.get_full_name }}
-{{ object.body }}
+{% for alias in alias_list %}
+{{ alias }}: {{alias.username}}@{{alias.username.email_server}}<Br />
+{% endfor %}
