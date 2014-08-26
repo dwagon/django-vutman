@@ -21,13 +21,21 @@
     <div class="container">
 
       <!-- Static navbar -->
-      <div class="navbar navbar-default" role="navigation">
+     <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+
         <div class="container-fluid">
           <div class="navbar-header">
             <a class="navbar-brand" href="/vutman/">Django Emails</a>
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+              <span class="sr-only">Toggle navigation</span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </button>
           </div>
-          <div class="navbar-collapse collapse">
-
+	  
+	  <div class="navbar-collapse collapse">
+	    {% if user.is_authenticated %}
 	    <form class="navbar-form navbar-left" role="search" method="get" action="/vutman/search/">
               <div class="form-group">
 		<input type="text" class="form-control" placeholder="Search" 
@@ -36,20 +44,42 @@
               <button type="submit" class="btn btn-default">search</button>
 	      <input type="hidden" name="alias" value="on" />
 	      <input type="hidden" name="user"  value="on" />
-
+	      
 	    </form>
-	    {% if user.is_authenticated %}
-	    <a href="/accounts/logout/">logoff {{user}}</a>
-	    {% else %}
-	    <a href="/accounts/login/">Login</a>
-	    {% endif %}
+         {% endif %}
+
+	    <ul class="nav navbar-nav navbar-right">
+	      {% if user.is_authenticated %}
+              <li>
+		<a href="/admin/vutman/">
+		  <span class="glyphicon glyphicon-cog"></span>
+		  admin
+		</a>
+	      </li>
+              <li>
+		<a href="/accounts/logout">
+		  <span class="glyphicon glyphicon-user"></span>
+		  Logoff {{person|title}}
+		</a>
+	      </li>
+	      {% else %}
+              <li>
+		<a href="/accounts/login">
+		  <span class="glyphicon glyphicon-user"></span>
+		  Login
+		</a>
+	      </li>
+	      {% endif %}
+	    </ul>
+	    
           </div><!--/.nav-collapse -->
         </div><!--/.container-fluid -->
-      </div>
-
+     </div>
       <!-- Main component for a primary marketing message or call to action -->
       <div class="container-fluid">
-
+	<Br />
+	<Br />
+	<Br />
 	{% block content %}
 	{% endblock %}
       </div>

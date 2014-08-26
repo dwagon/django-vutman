@@ -55,12 +55,24 @@ class EmailUser(VutmanModel):
     class Meta:
         unique_together = (("username", "email_server"))
 
+    def get_alias_history(self):
+        alias_history = []
+        for alias in EmailAlias.objects.filter(username=self):
+            history = alias.get_history()
+            alias_history += history
+        return alias_history
+
     def get_history(self):
         history_all = []
         last = self.__dict__
         for history in self.history.all():
             change = {}
             for k, v in history.__dict__.items():
+                if k == "history_type" and v == "+":
+                    history.__dict__['changed'] = change
+                    history_all.append(history)
+                    continue
+                    
                 if k in ['_state', 'last_modified', 'last_modified_by',
                          'history_id', 'history_type', 'history_date',
                          'history_user_id', 'last_modified_by_id'
@@ -69,9 +81,9 @@ class EmailUser(VutmanModel):
                 if k in last and last[k] != v:
                     change[k] = (v, last[k])
             last = history.__dict__
-            if change:
-                history.__dict__['changed'] = change
-                history_all.append(history)
+            # if change:
+            history.__dict__['changed'] = change
+            history_all.append(history)
         return history_all
 
     def _suggested_aliases(self):
@@ -128,6 +140,29 @@ class EmailAlias(VutmanModel):
             self.username.username,
             self.username.email_server
         )
+
+    def get_history(self):
+        history_all = []
+        last = self.__dict__
+        for history in self.history.all():
+            change = {}
+            for k, v in history.__dict__.items():
+                if k == "history_type" and v == "+":
+                    history.__dict__['changed'] = change
+                    history_all.append(history)
+                    continue
+                if k in ['_state', 'last_modified', 'last_modified_by',
+                         'history_id', 'history_type', 'history_date',
+                         'history_user_id', 'last_modified_by_id'
+                     ]:
+                    continue
+                if k in last and last[k] != v:
+                    change[k] = (v, last[k])
+            last = history.__dict__
+            if change:
+                history.__dict__['changed'] = change
+                history_all.append(history)
+        return history_all
 
     class Meta:
         unique_together = (("alias_name", "email_domain"))

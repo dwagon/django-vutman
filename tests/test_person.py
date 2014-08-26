@@ -181,26 +181,58 @@ class SimpleTestCase(TestCase):
         self.assertEqual(history[1].fullname, "new fullname")
         self.assertEqual(history[2].fullname, "first last")
 
-    def test_better_history_list(self):
+    def test_better_user_history_list(self):
         history = self.user.get_history()
-        self.assertEqual(len(history), 1)
+        self.assertEqual(len(history), 2)
         self.assertEqual(history[0].changed.keys(), [])
 
         self.user.fullname = "new fullname"
         self.user.save()
 
         history = self.user.get_history()
-        self.assertEqual(len(history), 2)
+        self.assertEqual(len(history), 3)
         self.assertEqual(history[0].changed.keys(), [])
         self.assertEqual(history[1].changed.keys(), ['fullname'])
-        self.assertEqual(history[1].changed['fullname'], 'first last')
+        self.assertEqual(history[1].changed['fullname'], ('first last', 'new fullname'))
 
         self.user.fullname = "newest fullname"
         self.user.active_directory_basedn = "new basedn"
         self.user.save()
 
         history = self.user.get_history()
-        self.assertEqual(len(history), 3)
+        self.assertEqual(len(history), 4)
         self.assertEqual(history[0].changed.keys(), [])
         self.assertEqual(history[1].changed.keys(), ['fullname', 'active_directory_basedn'])
         self.assertEqual(history[2].changed.keys(), ['fullname'])
+
+    def test_better_alias_history_list(self):
+        history = self.alias.get_history()
+        self.assertEqual(len(history), 1)
+
+        self.alias.alias_name = "new fullname"
+        self.alias.save()
+
+        history = self.alias.get_history()
+        self.assertEqual(len(history), 2)
+        self.assertEqual(history[0].changed.keys(), ['alias_name'])
+
+    def test_usera_alias_history(self):
+        history = self.user.get_alias_history()
+        self.assertEqual(len(history), 1)
+        self.alias.alias_name = "new alias"
+        self.alias.save()
+        history = self.user.get_alias_history()
+        self.assertEqual(len(history), 2)
+        self.assertEqual(history[0].changed.keys(), ['alias_name'])
+
+        x = EmailAlias.objects.create(
+            alias_name="new.name",
+            username=self.user,
+            email_domain=self.domain
+        )
+        x.save()
+        x.alias_name = "bob"
+        x.save()
+
+        history = self.user.get_alias_history()
+        self.assertEqual(len(history), 4)

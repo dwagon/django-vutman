@@ -12,29 +12,47 @@
 <div class="row">
 <div class="col-lg-6">
 <h3>{{emailuser.fullname|title}}'s details</h3>
+<div class="hidden-sm hidden-xs hidden-md">
+<p>Details about the user & their email server.</p>
+</div>
 {% crispy form form.helper %}
 </div>
 
 <div class="col-lg-6">
 <h3>{{emailuser.fullname|title}}'s Aliases</h3>
+<div class="hidden-sm hidden-xs hidden-md">
+<p>Every alias will be an email address that will belong to {{emailuser.fullname|title}}.</p>
+</div>
 {% for f in formset %}
 
 <form class="form-inline" role="form" method="post" action="/vutman/alias/{{f.initial.id|default:'new'}}/">
   {% csrf_token %}
+  {{f.errors}}
   <input type="hidden" name="username" value="{{emailuser.pk}}">
-  {{f.state}}
+  {{f.state|as_crispy_field}}
   <div class="form-group">
     <label class="sr-only" for="exampleInputEmail2">Alias</label>
+<!--
     <input type="input" class="form-control" id="exampleInputEmail2" placeholder="Enter email"
 	   value="{{f.alias_name.value|default:''}}" name="alias_name">
+    -->
+      {{f.alias_name|as_crispy_field}}
+
   </div>
   <div class="form-group">
     <div class="input-group">
+      <!--
       <div class="input-group-addon">@</div>
-      {{f.email_domain}}
+      -->
+      {{f.email_domain|as_crispy_field}}
+
     </div>
   </div>
-  <button type="submit" class="btn btn-default">Save</button>
+  <div class="form-group">
+    <div class="input-group">
+      <button type="submit" class="btn btn-default">Save</button>
+      </div>
+    </div>
 </form>
 
 <!--
@@ -42,15 +60,19 @@
   <button type="submit" class="btn btn-warning">Delete</button>
 <form>
 -->
-
-<Br />
-<Br />
 {% endfor %}
 </div>
-<Br />
-<Br />
+</div>
 
-<h3>{{emailuser}} History</h3>
+<div class="row hidden-sm hidden-xs hidden-md">
+<h1>{{emailuser.fullname|title}} History</h1>
+<p>The history of this user and all the thier aliases</p>
+</div>
+<Hr />
+
+<div class="row">
+<div class="col-lg-6">
+<h3>{{emailuser.fullname|title}} User History</h3>
 <ul>
 {% for history in emailuser.get_history %}
 <li>
@@ -61,6 +83,22 @@
 </li>
 {% endfor %}
 </ul>
+</div>
+<div class="col-lg-6">
+<h3>{{emailuser.fullname|title}} Alias History</h3>
+<ul>
+{% for history in emailuser.get_alias_history %}
+<li>
+  <strong>{{history.alias_name}}</strong>
+  {{history.last_modified}} {{history.last_modified_by_id}}
+  {% for key, value in history.changed.items %}
+  <Br />{{key}} {{value.0}} -> {{value.1}}
+  {% endfor %}
+</li>
+{% endfor %}
+</ul>
+</div>
+</div>
 {% endblock %}
 
 
