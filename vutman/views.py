@@ -23,6 +23,7 @@ def render_virtual_user_table(request):
     )
 
 
+@login_required
 def index(request):
     user_list = EmailUser.objects.all().order_by('-last_modified')[:NUMBER_OF_RECORDS_ON_INDEX_PAGE]
     alias_list = EmailAlias.objects.all().order_by('-last_modified')[:NUMBER_OF_RECORDS_ON_INDEX_PAGE]
@@ -104,6 +105,7 @@ def emailalias_details(request, pk=None):
         return redirect(emailalias.username.get_absolute_url())
 
 
+@login_required
 def search(request, q=None):
     query_string = q
     if 'q' in request.GET:
