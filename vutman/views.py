@@ -1,6 +1,7 @@
 from django.shortcuts import render_to_response, redirect
 from django.template import RequestContext
 from django.core.urlresolvers import reverse
+from django.contrib.auth.decorators import login_required
 from vutman.models import EmailUser, EmailAlias, EmailDomain
 from vutman.search_indexes import search_emailaliases, search_emailuser
 from vutman.forms import EmailUserForm, EmailAliasForm, EmailAliasFormSet
@@ -9,6 +10,7 @@ from itertools import chain
 NUMBER_OF_RECORDS_ON_INDEX_PAGE = 28
 
 
+@login_required
 def render_virtual_user_table(request):
     alias_list = EmailAlias.objects.all().order_by('username').iterator()
 
@@ -35,6 +37,7 @@ def index(request):
     )
 
 
+@login_required
 def emailuser_details(request, pk=None):
     emailuser = EmailUser.objects.get(pk=pk)
     domain_list = EmailDomain.objects.all()
@@ -74,12 +77,14 @@ def emailuser_details(request, pk=None):
     )
 
 
+@login_required
 def emailalias_delete(request, pk):
     emailalias = EmailAlias.objects.get(pk=pk)
     emailalias.delete()
     return redirect(emailalias.username.get_absolute_url())
 
 
+@login_required
 def emailalias_details(request, pk=None):
     emailalias = None
     if pk:
@@ -103,6 +108,9 @@ def search(request, q=None):
     query_string = q
     if 'q' in request.GET:
         query_string = request.GET['q']
+
+    if not query_string:
+        return redirect("/vutman/")
 
     user_list = []
     alias_list = []

@@ -164,3 +164,43 @@ class SimpleTestCase(TestCase):
         self.user.set_guessed_name()
         self.assertNotEqual(self.user.fullname, "new name")
         self.assertEqual(self.user.fullname, "first last")
+
+    def test_history_object(self):
+        history = self.user.history.all()
+        self.assertEqual(len(history), 1)
+        self.assertEqual(history[0].username, self.user.username)
+        self.assertEqual(history[0].fullname, self.user.fullname)
+        self.user.fullname = "new fullname"
+        self.user.save()
+        self.user.fullname = "newest fullname"
+        self.user.save()
+
+        history = self.user.history.all()
+        self.assertEqual(len(history), 3)
+        self.assertEqual(history[0].fullname, "newest fullname")
+        self.assertEqual(history[1].fullname, "new fullname")
+        self.assertEqual(history[2].fullname, "first last")
+
+    def test_better_history_list(self):
+        history = self.user.get_history()
+        self.assertEqual(len(history), 1)
+        self.assertEqual(history[0].changed.keys(), [])
+
+        self.user.fullname = "new fullname"
+        self.user.save()
+
+        history = self.user.get_history()
+        self.assertEqual(len(history), 2)
+        self.assertEqual(history[0].changed.keys(), [])
+        self.assertEqual(history[1].changed.keys(), ['fullname'])
+        self.assertEqual(history[1].changed['fullname'], 'first last')
+
+        self.user.fullname = "newest fullname"
+        self.user.active_directory_basedn = "new basedn"
+        self.user.save()
+
+        history = self.user.get_history()
+        self.assertEqual(len(history), 3)
+        self.assertEqual(history[0].changed.keys(), [])
+        self.assertEqual(history[1].changed.keys(), ['fullname', 'active_directory_basedn'])
+        self.assertEqual(history[2].changed.keys(), ['fullname'])

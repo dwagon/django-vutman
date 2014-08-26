@@ -38,10 +38,11 @@
 	      <input type="hidden" name="user"  value="on" />
 
 	    </form>
-	    <!--
-	    <a href="/vutman/render_vut/">Render vut</a>
-	    -->
-
+	    {% if user.is_authenticated %}
+	    <a href="/accounts/logout/">logoff {{user}}</a>
+	    {% else %}
+	    <a href="/accounts/login/">Login</a>
+	    {% endif %}
           </div><!--/.nav-collapse -->
         </div><!--/.container-fluid -->
       </div>

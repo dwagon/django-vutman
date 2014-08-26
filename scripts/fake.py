@@ -34,8 +34,16 @@ def run(numbers=1):
             email_server=random.choice(emailserver_list)
         )
         o.save()
+        o.fullname = "fullname %d" % i
+        o.save()
         e = EmailAlias.objects.create(
             alias_name="alias_%d" % i,
+            username=o,
+            email_domain=random.choice(emaildomain_list)
+        )
+        e.save()
+        e = EmailAlias.objects.create(
+            alias_name="alias.%d" % i,
             username=o,
             email_domain=random.choice(emaildomain_list)
         )

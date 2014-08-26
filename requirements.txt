@@ -1,0 +1,8 @@
+Django
+argparse
+django-crispy-forms
+django-cuser
+django-extensions
+django-simple-history
+six
+wsgiref

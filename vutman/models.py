@@ -13,7 +13,6 @@ class VutmanModel(models.Model):
     state = models.CharField(max_length=1, choices=STATE_CHOICES, default="E")
     last_modified = models.DateTimeField(auto_now=True, auto_now_add=True)
     last_modified_by = CurrentUserField()
-    history = HistoricalRecords()
 
     def get_absolute_url(self):
         object_type = self.__class__.__name__.lower()
@@ -29,6 +28,7 @@ class VutmanModel(models.Model):
 
 class EmailServer(VutmanModel):
     email_server = models.CharField(max_length=200, unique=True)
+    history = HistoricalRecords()
 
     def __str__(self):
         return self.email_server
@@ -36,6 +36,7 @@ class EmailServer(VutmanModel):
 
 class EmailDomain(VutmanModel):
     domain_name = models.CharField(max_length=200, unique=True)
+    history = HistoricalRecords()
 
     def __str__(self):
         return self.domain_name
@@ -46,12 +47,32 @@ class EmailUser(VutmanModel):
     fullname = models.CharField(max_length=200, blank=True)
     email_server = models.ForeignKey(EmailServer)
     active_directory_basedn = models.CharField(blank=True, max_length=200)
+    history = HistoricalRecords()
 
     def __str__(self):
         return self.username
 
     class Meta:
         unique_together = (("username", "email_server"))
+
+    def get_history(self):
+        history_all = []
+        last = self.__dict__
+        for history in self.history.all():
+            change = {}
+            for k, v in history.__dict__.items():
+                if k in ['_state', 'last_modified', 'last_modified_by',
+                         'history_id', 'history_type', 'history_date',
+                         'history_user_id', 'last_modified_by_id'
+                     ]:
+                    continue
+                if k in last and last[k] != v:
+                    change[k] = (v, last[k])
+            last = history.__dict__
+            if change:
+                history.__dict__['changed'] = change
+                history_all.append(history)
+        return history_all
 
     def _suggested_aliases(self):
         " Suggest aliases for the user "
@@ -95,6 +116,7 @@ class EmailAlias(VutmanModel):
     alias_name = models.CharField(max_length=50)
     username = models.ForeignKey(EmailUser)
     email_domain = models.ForeignKey(EmailDomain)
+    history = HistoricalRecords()
 
     def __str__(self):
         return "%s@%s" % (self.alias_name, self.email_domain)

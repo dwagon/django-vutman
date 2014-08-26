@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>The Vutman List</h1>
+<form role="form" method="post">
+  {% csrf_token %}
+  {{form.errors}}
+
+  <div class="form-group">
+    <label for="exampleInputEmail1">username:</label>
+    {{form.username.errors}}
+    <input type="input" class="form-control" id="exampleInputLinkName" 
+	   name="username" placeholder="Enter username">
+  </div>
+  <div class="form-group">
+  <label for="exampleInputPassword">password:</label>
+    {{form.password.errors}}
+  <input type="password" class="form-control" id="exampleInputLinkName" 
+  name="password" placeholder="Enter your password">
+  </div>
+  <button type="submit" class="btn btn-primary btn-lg btn-block">Login</button>
+</form>
+
+  Don't have an account? Why not <a href='/vutman/register'>make one</a> right now!
+  <a href='/vutman/register' class="btn btn-success btn-lg btn-block">Make a new account</a>
+  </a>
+{% endblock %}

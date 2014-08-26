@@ -1,9 +1,22 @@
 {% extends "base.html" %}
 {% block content %}
 {% load crispy_forms_tags %}
-<h3>{{emailuser.fullname|title}}</h3>
-{% crispy form form.helper %}
+
+
+<div class="row hidden-sm hidden-xs hidden-md">
+<h1>{{emailuser.fullname|title}}</h1>
+<p>Review, Update or modified the users account or email address.</p>
 <Hr />
+</div>
+
+<div class="row">
+<div class="col-lg-6">
+<h3>{{emailuser.fullname|title}}'s details</h3>
+{% crispy form form.helper %}
+</div>
+
+<div class="col-lg-6">
+<h3>{{emailuser.fullname|title}}'s Aliases</h3>
 {% for f in formset %}
 
 <form class="form-inline" role="form" method="post" action="/vutman/alias/{{f.initial.id|default:'new'}}/">
@@ -33,33 +46,21 @@
 <Br />
 <Br />
 {% endfor %}
-<!--
-<form class="form-inline" role="form" method="post" action="/vutman/alias/new/">
-  {% csrf_token %}
-  {{formset.0.state}}
-  <input type="hidden" name="username" value="{{formset.0.username.value}}">
-  <div class="form-group">
-    <label class="sr-only" for="exampleInputEmail2">Alias</label>
-    <input type="input" class="form-control" id="exampleInputEmail2" placeholder="Enter email"
-	   value="" name="alias_name">
-  </div>
-  <div class="form-group">
-    <div class="input-group">
-      <div class="input-group-addon">@</div>
-     <select id="id_email_domain" name="email_domain">
-       <option value="">---------</option>
-       {% for domain in domain_list %}
-       <option value="{{domain.pk}}">{{domain}}</option>
-      {% endfor %}
-     </select>
+</div>
+<Br />
+<Br />
 
-    </div>
-  </div>
-  <button type="submit" class="btn btn-default">Save</button>
-</form>
--->
-<Br />
-<Br />
+<h3>{{emailuser}} History</h3>
+<ul>
+{% for history in emailuser.get_history %}
+<li>
+  {{history.last_modified}} {{history.last_modified_by_id}}
+  {% for key, value in history.changed.items %}
+  <Br /><strong>{{key}}</strong> {{value.0}} -> {{value.1}}
+  {% endfor %}
+</li>
+{% endfor %}
+</ul>
 {% endblock %}
 
 
