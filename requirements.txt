@@ -6,3 +6,5 @@ django-extensions
 django-simple-history
 six
 wsgiref
+coverage
+tox
