@@ -5,4 +5,4 @@ rm db.sqlite3
 ./manage.py set_fake_passwords --password="admin"
 ./manage.py runscript fake --script-args=${1}
 
-./manage.py runserver
+./manage.py runserver 0.0.0.0:8888
