@@ -202,7 +202,8 @@ class SimpleTestCase(TestCase):
         history = self.user.get_history()
         self.assertEqual(len(history), 4)
         self.assertEqual(history[0].changed.keys(), [])
-        self.assertEqual(history[1].changed.keys(), ['fullname', 'active_directory_basedn'])
+        self.assertIn('fullname', history[1].changed.keys())
+        self.assertIn('active_directory_basedn', history[1].changed.keys())
         self.assertEqual(history[2].changed.keys(), ['fullname'])
 
     def test_better_alias_history_list(self):
