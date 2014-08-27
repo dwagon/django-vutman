@@ -81,4 +81,3 @@ def search_from_request(request, q=None):
         'user_list': user_list,
         'alias_list': alias_list
     }
-

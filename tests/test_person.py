@@ -193,7 +193,8 @@ class SimpleTestCase(TestCase):
         self.assertEqual(len(history), 3)
         self.assertEqual(history[0].changed.keys(), [])
         self.assertEqual(history[1].changed.keys(), ['fullname'])
-        self.assertEqual(history[1].changed['fullname'], ('first last', 'new fullname'))
+        self.assertEqual(history[1].changed['fullname'],
+                         ('first last', 'new fullname'))
 
         self.user.fullname = "newest fullname"
         self.user.active_directory_basedn = "new basedn"

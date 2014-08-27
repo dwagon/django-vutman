@@ -96,8 +96,7 @@ TEMPLATE_DIRS = (
     os.path.join(BASE_DIR, "vutman/templates"),
 )
 
-CRISPY_TEMPLATE_PACK = 'bootstrap3' 
+CRISPY_TEMPLATE_PACK = 'bootstrap3'
 
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
-

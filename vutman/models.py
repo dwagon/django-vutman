@@ -72,11 +72,12 @@ class EmailUser(VutmanModel):
                     history.__dict__['changed'] = change
                     history_all.append(history)
                     continue
-                    
-                if k in ['_state', 'last_modified', 'last_modified_by',
-                         'history_id', 'history_type', 'history_date',
-                         'history_user_id', 'last_modified_by_id'
-                     ]:
+
+                if k in [
+                        '_state', 'last_modified', 'last_modified_by',
+                        'history_id', 'history_type', 'history_date',
+                        'history_user_id', 'last_modified_by_id'
+                        ]:
                     continue
                 if k in last and last[k] != v:
                     change[k] = (v, last[k])
@@ -151,10 +152,11 @@ class EmailAlias(VutmanModel):
                     history.__dict__['changed'] = change
                     history_all.append(history)
                     continue
-                if k in ['_state', 'last_modified', 'last_modified_by',
-                         'history_id', 'history_type', 'history_date',
-                         'history_user_id', 'last_modified_by_id'
-                     ]:
+                if k in [
+                        '_state', 'last_modified', 'last_modified_by',
+                        'history_id', 'history_type', 'history_date',
+                        'history_user_id', 'last_modified_by_id'
+                ]:
                     continue
                 if k in last and last[k] != v:
                     change[k] = (v, last[k])

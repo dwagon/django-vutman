@@ -4,10 +4,8 @@ from django.core.urlresolvers import reverse
 from django.contrib.auth.decorators import login_required
 from vutman.models import EmailUser, EmailAlias, EmailDomain
 from vutman.search_indexes import search_emailaliases, search_emailuser
-from vutman.forms import EmailUserForm, EmailAliasForm, EmailAliasFormSet
+from vutman.forms import EmailUserForm, EmailAliasForm
 from itertools import chain
-
-NUMBER_OF_RECORDS_ON_INDEX_PAGE = 28
 
 
 @login_required
@@ -25,8 +23,10 @@ def render_virtual_user_table(request):
 
 @login_required
 def index(request):
-    user_list = EmailUser.objects.all().order_by('-last_modified')[:NUMBER_OF_RECORDS_ON_INDEX_PAGE]
-    alias_list = EmailAlias.objects.all().order_by('-last_modified')[:NUMBER_OF_RECORDS_ON_INDEX_PAGE]
+    user_list = EmailUser.objects.all() \
+                                 .order_by('-last_modified')[:25]
+    alias_list = EmailAlias.objects.all() \
+                                   .order_by('-last_modified')[:25]
 
     return render_to_response(
         "index.html",
@@ -62,7 +62,8 @@ def emailuser_details(request, pk=None):
         form = EmailUserForm(instance=emailuser)
 
     formset = []
-    for alias in EmailAlias.objects.filter(username=emailuser).order_by('state'):
+    for alias in EmailAlias.objects.filter(username=emailuser) \
+                                   .order_by('state'):
         x = EmailAliasForm(instance=alias)
         formset.append(x)
     formset.append(EmailAliasForm())
@@ -110,9 +111,12 @@ def search(request, q=None):
     query_string = q
     if 'q' in request.GET:
         query_string = request.GET['q']
+    elif q:
+        query_string = q
 
     if not query_string:
-        return redirect("/vutman/")
+        print "missing query_string"
+        return redirect("/vutman/?missing_query_string")
 
     user_list = []
     alias_list = []
@@ -140,11 +144,12 @@ def search(request, q=None):
                 ONE_USER = False
                 break
         if ONE_USER:
-            return redirect(user_list[0].get_absolute_url())
+            return redirect("%s?one_user" % user_list[0].get_absolute_url())
 
     if len(alias_list) == 1:
-        return redirect(alias_list[0].username.get_absolute_url())
-
+        return redirect(
+            "%s?one_alias" % alias_list[0].username.get_absolute_url()
+        )
 
     # If no results, then do not show the results page.
     # Just stay on the search page with a nice message.

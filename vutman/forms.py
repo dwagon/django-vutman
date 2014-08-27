@@ -1,7 +1,7 @@
 from django.forms import ModelForm
 from vutman.models import EmailUser, EmailAlias
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Submit, Layout
+from crispy_forms.layout import Submit
 
 
 class CrispyForm(ModelForm):
