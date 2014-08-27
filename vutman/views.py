@@ -47,7 +47,6 @@ def emailuser_details(request, pk=None):
 
     if request.POST:
         if 'alias_name' in request.POST:
-            print request.POST
             formset = EmailAliasForm(request.POST)
             if formset.is_valid():
                 formset.save()
@@ -118,7 +117,6 @@ def search(request, q=None):
         query_string = q
 
     if not query_string:
-        print "missing query_string"
         return redirect("/vutman/?missing_query_string")
 
     user_list = []

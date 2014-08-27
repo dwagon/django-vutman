@@ -121,14 +121,14 @@ class SimpleTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_emailalias_delete(self):
-        delete_url = "/vutman/alias/1/delete/"
-        response = self.client.get(delete_url)
+        response = self.client.get(reverse('emailalias.delete',
+                                           kwargs={'pk': 1}))
         self.assertEqual(response.status_code, 302)
         self.assertIn(self.user.get_absolute_url(), response.url)
 
     def test_emailalias_delete_missing_id(self):
-        delete_url = "/vutman/alias/1000000/delete/"
-        response = self.client.get(delete_url)
+        response = self.client.get(reverse('emailalias.delete',
+                                           kwargs={'pk': 10000}))
         self.assertEqual(response.status_code, 302)
         self.assertIn(reverse('index'), response.url)
 
