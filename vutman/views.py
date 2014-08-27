@@ -81,8 +81,11 @@ def emailuser_details(request, pk=None):
 
 @login_required
 def emailalias_delete(request, pk):
-    emailalias = EmailAlias.objects.get(pk=pk)
-    emailalias.delete()
+    try:
+        emailalias = EmailAlias.objects.get(pk=pk)
+        emailalias.delete()
+    except Exception:
+        return redirect(reverse('index'))
     return redirect(emailalias.username.get_absolute_url())
 
 

@@ -47,13 +47,11 @@ class SimpleTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_search_no_q(self):
-        return
         response = self.client.get(reverse('search'), args=[])
         self.assertEqual(response.context, None)
         self.assertEqual(response.status_code, 302)
 
     def test_search_bad_q(self):
-        return
         response = self.client.get(reverse('search'), args={'q': 'BAD_SEARCH'})
         self.assertEqual(response.context, None)
         self.assertEqual(response.status_code, 302)
@@ -73,6 +71,29 @@ class SimpleTestCase(TestCase):
         self.assertEqual(len(response.context[-1]['all_list']), 4)
         self.assertEqual(len(response.context[-1]['alias_list']), 2)
         self.assertEqual(len(response.context[-1]['user_list']), 2)
+
+    def test_search_good_find_nothing_redirect_index(self):
+        response = self.client.get(reverse('search'), {
+            'q': 'WILL_NOT_MATCH', 'alias': 'on', 'user': 'on'
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('index'), response.url)
+
+    def test_search_good_find_single_user_redirect_to_page(self):
+        response = self.client.get(reverse('search'), {
+            'q': 'username2', 'alias': 'on', 'user': 'on'
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(self.user2.get_absolute_url(), response.url)
+        self.assertIn('one_user', response.url)
+
+    def test_search_good_find_single_alias_redirect_to_page(self):
+        response = self.client.get(reverse('search'), {
+            'q': 'alias2', 'alias': 'on', 'user': 'on'
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(self.user2.get_absolute_url(), response.url)
+        self.assertIn('one_alias', response.url)
 
     def test_search_only_aliases(self):
         response = self.client.get(reverse('search'),
@@ -97,4 +118,26 @@ class SimpleTestCase(TestCase):
 
     def test_emailuser_details(self):
         response = self.client.get(self.user.get_absolute_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_emailalias_delete(self):
+        delete_url = "/vutman/alias/1/delete/"
+        response = self.client.get(delete_url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(self.user.get_absolute_url(), response.url)
+
+    def test_emailalias_delete_missing_id(self):
+        delete_url = "/vutman/alias/1000000/delete/"
+        response = self.client.get(delete_url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('index'), response.url)
+
+    def test_emaildetails_get(self):
+        response = self.client.get(self.user.get_absolute_url())
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.get(self.user.get_absolute_url(), {'pk': 1})
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.post(self.user.get_absolute_url(), {'pk': 1})
         self.assertEqual(response.status_code, 200)
