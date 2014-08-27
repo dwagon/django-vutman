@@ -2,3 +2,6 @@
 *~*
 *#*
 *sqlite*
+.coverage
+.tox
+htmlcov
