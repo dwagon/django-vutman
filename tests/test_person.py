@@ -134,14 +134,27 @@ class SimpleTestCase(TestCase):
             alias_name="first.last",
             username=self.user,
             email_domain=self.domain
-        )
+        ).save()
         self.assertEqual(self.user.guess_fullname(), "first last")
         EmailAlias.objects.create(
             alias_name="first_last",
             username=self.user,
             email_domain=self.domain
-        )
+        ).save()
         self.assertEqual(self.user.guess_fullname(), "first last")
+
+        self.user = EmailUser.objects.create(
+            username="username_new",
+            fullname="X",
+            email_server=self.server,
+            active_directory_basedn="basedn"
+        )
+        self.alias = EmailAlias.objects.create(
+            alias_name="first2_last2",
+            username=self.user,
+            email_domain=self.domain
+        )
+        self.assertEqual(self.user.guess_fullname(), "first2 last2")
 
     def test_alias_set_guessname_blank(self):
         self.user.fullname = ''
