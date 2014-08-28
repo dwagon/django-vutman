@@ -32,6 +32,18 @@ class SimpleTestCase(TestCase):
         self.assertIn("field2__icontains", str(query))
         self.assertIn("term", str(query))
 
+    def test_make_search_query_many_terms(self):
+        query = make_search_query(
+            "term",
+            ["field1", "field2", "field3", "field4"]
+        )
+        self.assertIn("OR", str(query))
+        self.assertIn("field1__icontains", str(query))
+        self.assertIn("field2__icontains", str(query))
+        self.assertIn("field3__icontains", str(query))
+        self.assertIn("field__icontains", str(query))
+        self.assertIn("term", str(query))
+
     def test_basic_search_alias(self):
         expected_results = [
             ("Alias", 1),

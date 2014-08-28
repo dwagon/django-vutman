@@ -22,8 +22,8 @@ def make_search_query(query_string, search_fields):
                 or_query = or_query | q
         if query is None:
             query = or_query
-        else:
-            query = query & or_query
+        # else:
+        #    query = query & or_query
     return query
 
 

@@ -111,6 +111,39 @@ class SimpleTestCase(TestCase):
         self.assertEqual(len(response.context[-1]['alias_list']), 0)
         self.assertEqual(len(response.context[-1]['user_list']), 2)
 
+    def test_search_1users_many_aliases(self):
+        # domain = EmailDomain.objects.create(email_server="domain2")
+        EmailUser.objects.create(
+            username="domain21",
+            fullname="first last",
+            email_server=self.server,
+            active_directory_basedn="basedn"
+        ).save()
+        EmailUser.objects.create(
+            username="domain",
+            fullname="first last",
+            email_server=self.server,
+            active_directory_basedn="basedn"
+        ).save()
+        EmailAlias.objects.create(
+            alias_name="domain2",
+            username=self.user2,
+            email_domain=self.domain
+        ).save()
+        EmailAlias.objects.create(
+            alias_name="domain21",
+            username=self.user,
+            email_domain=self.domain
+        ).save()
+
+        response = self.client.get(
+            reverse('search'),
+            {
+                'q': 'domain2', 'user': 'on', 'alias': 'on'
+            }
+        )
+        self.assertEqual(response.status_code, 200)
+
     def test_render_vut(self):
         response = self.client.get(reverse('render_vut'))
         self.assertEqual(response.status_code, 200)
