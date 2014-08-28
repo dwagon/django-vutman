@@ -1,5 +1,7 @@
 [![Coverage Status](https://coveralls.io/repos/daniellawrence/django-vutman/badge.png?branch=master)](https://coveralls.io/r/daniellawrence/django-vutman?branch=master)
 [![Build Status](https://travis-ci.org/daniellawrence/django-vutman.svg?branch=master)](https://travis-ci.org/daniellawrence/django-vutman)
+[![Dependency Status](https://gemnasium.com/daniellawrence/django-vutman.svg)](https://gemnasium.com/daniellawrence/django-vutman)
+
 
 Django-vutman
 ================
