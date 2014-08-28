@@ -41,7 +41,7 @@ class SimpleTestCase(TestCase):
         self.assertIn("field1__icontains", str(query))
         self.assertIn("field2__icontains", str(query))
         self.assertIn("field3__icontains", str(query))
-        self.assertIn("field__icontains", str(query))
+        self.assertIn("field4__icontains", str(query))
         self.assertIn("term", str(query))
 
     def test_basic_search_alias(self):
