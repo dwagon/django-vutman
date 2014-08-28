@@ -40,7 +40,11 @@ def index(request):
 
 @login_required
 def emailuser_details(request, pk=None):
-    emailuser = EmailUser.objects.get(pk=pk)
+    try:
+        emailuser = EmailUser.objects.get(pk=pk)
+    except Exception:
+        return redirect(reverse('index'))
+
     domain_list = EmailDomain.objects.all()
 
     ALIAS_POST = False
@@ -57,15 +61,18 @@ def emailuser_details(request, pk=None):
                 form.save()
     else:
         form = EmailUserForm(instance=emailuser)
+
     if ALIAS_POST:
         form = EmailUserForm(instance=emailuser)
 
+    # Build up a formset
     formset = []
     for alias in EmailAlias.objects.filter(username=emailuser) \
                                    .order_by('state'):
         x = EmailAliasForm(instance=alias)
         formset.append(x)
     formset.append(EmailAliasForm())
+
     return render_to_response(
         "form.html",
         {
@@ -103,21 +110,16 @@ def emailalias_details(request, pk=None):
 
         if form.is_valid():
             form.save()
-        else:
-            print form.errors
-        return redirect(emailalias.username.get_absolute_url())
+
+    return redirect(emailalias.username.get_absolute_url())
 
 
 @login_required
-def search(request, q=None):
-    query_string = q
-    if 'q' in request.GET:
-        query_string = request.GET['q']
-    elif q:
-        query_string = q
-
-    if not query_string:
+def search(request):
+    if 'q' not in request.GET:
         return redirect("/vutman/?missing_query_string")
+
+    query_string = request.GET['q']
 
     user_list = []
     alias_list = []
@@ -141,6 +143,8 @@ def search(request, q=None):
     if len(user_list) == 1:
         ONE_USER = True
         for alias in alias_list:
+            # Make sure that we have no found a single user,
+            # but many different aliases
             if alias.username != user_list[0]:
                 ONE_USER = False
                 break

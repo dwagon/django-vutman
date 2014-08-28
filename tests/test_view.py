@@ -141,3 +141,94 @@ class SimpleTestCase(TestCase):
 
         response = self.client.post(self.user.get_absolute_url(), {'pk': 1})
         self.assertEqual(response.status_code, 200)
+
+    def test_aliasdetails_via_bad_post(self):
+        response = self.client.post(
+            reverse('emailalias.details', kwargs={'pk': self.alias.pk}),
+            {}
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(self.alias.username.get_absolute_url(), response.url)
+
+    def test_aliasdetails_via_ok_post(self):
+        response = self.client.post(
+            reverse('emailalias.details', kwargs={'pk': self.alias.pk}),
+            {'pk': self.alias.pk, 'username': 1},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(self.alias.username.get_absolute_url(), response.url)
+
+    def test_aliasdetails_via_good_post(self):
+        response = self.client.post(
+            reverse('emailalias.details', kwargs={'pk': self.alias.pk}),
+            {
+                'pk': self.alias.pk,
+                'username': 1,
+                'email_domain': 1,
+                'alias_name': 'alias_name',
+                'state': 'E'
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(self.alias.username.get_absolute_url(), response.url)
+
+    def test_aliasdetails_via_good_post_no_pk(self):
+        response = self.client.post(
+            reverse('emailalias.details'),
+            {
+                'pk': self.alias.pk,
+                'username': 1,
+                'email_domain': 1,
+                'alias_name': 'alias_name',
+                'state': 'E'
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(self.alias.username.get_absolute_url(), response.url)
+
+    def test_aliasdetails_via_good_post_via_userdetails(self):
+        response = self.client.post(
+            reverse('emailuser.details', kwargs={'pk': self.user.pk}),
+            {
+                'pk': self.alias.pk,
+                'username': 1,
+                'email_domain': 1,
+                'alias_name': 'new_alias_name_via_post',
+                'state': 'E'
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_userdetails_via_post(self):
+        response = self.client.post(
+            reverse('emailuser.details', kwargs={'pk': self.user.pk}),
+            {}
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_userdetails_via_post_bad_pk(self):
+        response = self.client.post(
+            reverse('emailuser.details', kwargs={'pk': 10000}),
+            {}
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('index'), response.url)
+
+    def test_userdetails_via_post_good_pk(self):
+        response = self.client.post(
+            reverse('emailuser.details', kwargs={'pk': self.user.pk}),
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_userdetails_via_post_good_form(self):
+        response = self.client.post(
+            reverse('emailuser.details', kwargs={'pk': self.user.pk}),
+            {
+                'pk': self.user.pk,
+                'username': 'new_username_set_by_post',
+                'email_server': 1,
+                'full_name': 'new_fullname_set_by_post',
+                'state': 'E'
+            }
+        )
+        self.assertEqual(response.status_code, 200)
