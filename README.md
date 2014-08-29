@@ -35,3 +35,21 @@ Running without trashing the database
 
 	./manage.py runserver [0.0.0.0:8000]
 
+Running in Production
+--------------------------
+
+You will want to use gunicorn & nginx
+
+
+Running the tests
+-----------------
+
+The tests configured using tox, just install tox and away you go!
+
+	git clone https://github.com/daniellawrence/django-vutman
+	cd django-vutman
+	mkvirtualenv djangovutman
+	workon djangovutman
+	pip intall tox
+	tox
+	
