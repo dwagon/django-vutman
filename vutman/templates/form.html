@@ -18,6 +18,7 @@
 {% crispy form form.helper %}
 </div>
 
+{% if formset %}
 <div class="col-lg-6">
 <h3>{{emailuser.fullname|title}}'s Aliases</h3>
 <div class="hidden-sm hidden-xs hidden-md">
@@ -62,8 +63,11 @@
 -->
 {% endfor %}
 </div>
+{% endif %}
 </div>
 
+
+{% if emailuser.get_history %}
 <div class="row hidden-sm hidden-xs hidden-md">
 <h1>{{emailuser.fullname|title}} History</h1>
 <p>The history of this user and all the thier aliases</p>
@@ -99,6 +103,7 @@
 </ul>
 </div>
 </div>
+{% endif %}
 {% endblock %}
 
 

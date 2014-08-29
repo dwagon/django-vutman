@@ -40,10 +40,15 @@ def index(request):
 
 @login_required
 def emailuser_details(request, pk=None):
-    try:
-        emailuser = EmailUser.objects.get(pk=pk)
-    except Exception:
-        return redirect(reverse('index'))
+    # If we have been given a pk, then we must have
+    # an object to match.
+    # If we do not have a pk then assume its a new record
+    emailuser = None
+    if pk:
+        try:
+            emailuser = EmailUser.objects.get(pk=pk)
+        except Exception:
+            return redirect(reverse('index'))
 
     domain_list = EmailDomain.objects.all()
 
@@ -59,6 +64,7 @@ def emailuser_details(request, pk=None):
             form = EmailUserForm(request.POST, instance=emailuser)
             if form.is_valid():
                 form.save()
+                return(redirect(form.instance.get_absolute_url()))
     else:
         form = EmailUserForm(instance=emailuser)
 
@@ -72,6 +78,10 @@ def emailuser_details(request, pk=None):
         x = EmailAliasForm(instance=alias)
         formset.append(x)
     formset.append(EmailAliasForm())
+
+    if not emailuser:
+        formset = []
+        emailuser = EmailUser(fullname="New User")
 
     return render_to_response(
         "form.html",

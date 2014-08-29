@@ -264,4 +264,19 @@ class SimpleTestCase(TestCase):
                 'state': 'E'
             }
         )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(self.user.get_absolute_url(), response.url)
+
+    def test_userdetails_via_post_good_form_to_user_user(self):
+        response = self.client.post(reverse('emailuser.new'), {
+            'username': 'new_username_set_by_post',
+            'email_server': 1,
+            'full_name': 'new_fullname_set_by_post',
+            'state': 'E'
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(EmailUser(pk=3).get_absolute_url(), response.url)
+
+    def test_userdetails_has_new_form(self):
+        response = self.client.get(reverse('emailuser.new'))
         self.assertEqual(response.status_code, 200)

@@ -6,6 +6,8 @@ urlpatterns = [
 
     url(r'^user/(?P<pk>\d+)/$', views.emailuser_details,
         name='emailuser.details'),
+    url(r'^user/new/$', views.emailuser_details,
+        name='emailuser.new'),
     url(r'^alias/(?P<pk>\d+)/$', views.emailalias_details,
         name='emailalias.details'),
     url(r'^alias/new/$', views.emailalias_details,

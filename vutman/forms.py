@@ -17,7 +17,7 @@ class CrispyForm(ModelForm):
 class EmailUserForm(CrispyForm):
     class Meta:
         model = EmailUser
-        exclude = ['username', 'active_directory_basedn']
+        # exclude = ['username', 'active_directory_basedn']
 
 from django.forms.models import inlineformset_factory
 
