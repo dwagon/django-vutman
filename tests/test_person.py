@@ -196,29 +196,46 @@ class SimpleTestCase(TestCase):
 
     def test_better_user_history_list(self):
         history = self.user.get_history()
-        self.assertEqual(len(history), 2)
-        self.assertEqual(history[0].changed.keys(), [])
+        self.assertEqual(len(history), 1)
+        self.assertIn('username', history[0].changed.keys())
+        self.assertIn('fullname', history[0].changed.keys())
+        self.assertIn('state', history[0].changed.keys())
+        self.assertIn('active_directory_basedn', history[0].changed.keys())
 
         self.user.fullname = "new fullname"
         self.user.save()
 
         history = self.user.get_history()
-        self.assertEqual(len(history), 3)
-        self.assertEqual(history[0].changed.keys(), [])
+        self.assertEqual(len(history), 2)
+        self.assertIn('username', history[0].changed.keys())
+        self.assertIn('fullname', history[0].changed.keys())
+        self.assertIn('state', history[0].changed.keys())
+        self.assertIn('active_directory_basedn', history[0].changed.keys())
         self.assertEqual(history[1].changed.keys(), ['fullname'])
-        self.assertEqual(history[1].changed['fullname'],
-                         ('first last', 'new fullname'))
+        self.assertEqual(
+            history[1].changed['fullname'],
+            ('first last', 'new fullname')
+        )
 
         self.user.fullname = "newest fullname"
         self.user.active_directory_basedn = "new basedn"
         self.user.save()
 
         history = self.user.get_history()
-        self.assertEqual(len(history), 4)
-        self.assertEqual(history[0].changed.keys(), [])
-        self.assertIn('fullname', history[1].changed.keys())
-        self.assertIn('active_directory_basedn', history[1].changed.keys())
-        self.assertEqual(history[2].changed.keys(), ['fullname'])
+        self.assertEqual(len(history), 3)
+        self.assertIn('username', history[0].changed.keys())
+        self.assertIn('fullname', history[0].changed.keys())
+        self.assertIn('state', history[0].changed.keys())
+        self.assertIn('active_directory_basedn', history[0].changed.keys())
+
+        self.assertEqual(history[1].changed.keys(), ['fullname'])
+        self.assertEqual(
+            history[1].changed['fullname'],
+            ('first last', 'new fullname')
+        )
+
+        self.assertIn('fullname', history[2].changed.keys())
+        self.assertIn('active_directory_basedn', history[2].changed.keys())
 
     def test_better_alias_history_list(self):
         history = self.alias.get_history()
@@ -251,3 +268,41 @@ class SimpleTestCase(TestCase):
 
         history = self.user.get_alias_history()
         self.assertEqual(len(history), 4)
+
+    def test_user_history(self):
+        user = EmailUser(
+            username="creation username",
+            email_server=self.server,
+            fullname="creation fullname"
+        )
+        user.save()
+        history = user.get_history()
+        self.assertEqual(len(history), 1)
+        self.assertEqual(history[0].history_type, '+')
+
+        # Minor update to new object
+        user.fullname = "updated fullname"
+        user.save()
+        history = user.get_history()
+        self.assertEqual(len(history), 2)
+
+        # The first item will be the lastest change
+        self.assertEqual(history[0].history_type, '+')
+        self.assertIn('username', history[0].changed)
+        self.assertEqual(
+            history[0].changed['username'],
+            ('', 'creation username')
+        )
+        self.assertIn('fullname', history[0].changed)
+        self.assertEqual(
+            history[0].changed['fullname'],
+            ('', 'creation fullname')
+        )
+
+        # The last item will always be the create
+        self.assertEqual(history[-1].history_type, '~')
+        self.assertIn('fullname', history[-1].changed)
+        self.assertEqual(
+            history[-1].changed['fullname'],
+            ('creation fullname', 'updated fullname')
+        )

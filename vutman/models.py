@@ -65,22 +65,24 @@ class EmailUser(VutmanModel):
     def get_history(self):
         history_all = []
         last = self.__dict__
-        for history in self.history.all():
+        last = {}
+        for history in self.history.all().order_by('history_id'):
             change = {}
             for k, v in history.__dict__.items():
-                if k == "history_type" and v == "+":
-                    history.__dict__['changed'] = change
-                    history_all.append(history)
-                    continue
-
                 if k in [
                         '_state', 'last_modified', 'last_modified_by',
                         'history_id', 'history_type', 'history_date',
-                        'history_user_id', 'last_modified_by_id'
+                        'history_user_id', 'last_modified_by_id', 'id',
                         ]:
                     continue
+
+                if history.history_type == "+":
+                    change[k] = ('', v)
+                    continue
+
                 if k in last and last[k] != v:
-                    change[k] = (v, last[k])
+                    change[k] = (last[k], v)
+
             last = history.__dict__
             # if change:
             history.__dict__['changed'] = change
