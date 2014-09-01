@@ -1,11 +1,9 @@
 Django
-argparse
 django-crispy-forms
-django-cuser
 django-extensions
 django-simple-history
 six
-wsgiref
 coverage
 tox
 coveralls
+git+https://github.com/daniellawrence/django-cuser@python3_port

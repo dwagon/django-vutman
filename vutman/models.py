@@ -145,11 +145,12 @@ class EmailAlias(VutmanModel):
         )
 
     def get_history(self):
+        from copy import deepcopy
         history_all = []
         last = self.__dict__
         for history in self.history.all():
             change = {}
-            for k, v in history.__dict__.items():
+            for k, v in deepcopy(history.__dict__).items():
                 if k == "history_type" and v == "+":
                     history.__dict__['changed'] = change
                     history_all.append(history)

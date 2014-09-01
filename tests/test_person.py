@@ -211,7 +211,8 @@ class SimpleTestCase(TestCase):
         self.assertIn('fullname', history[0].changed.keys())
         self.assertIn('state', history[0].changed.keys())
         self.assertIn('active_directory_basedn', history[0].changed.keys())
-        self.assertEqual(history[1].changed.keys(), ['fullname'])
+        self.assertIn('fullname', history[1].changed.keys())
+        self.assertEqual(len(history[1].changed.keys()), 1)
         self.assertEqual(
             history[1].changed['fullname'],
             ('first last', 'new fullname')
@@ -228,7 +229,7 @@ class SimpleTestCase(TestCase):
         self.assertIn('state', history[0].changed.keys())
         self.assertIn('active_directory_basedn', history[0].changed.keys())
 
-        self.assertEqual(history[1].changed.keys(), ['fullname'])
+        self.assertIn('fullname', history[1].changed.keys())
         self.assertEqual(
             history[1].changed['fullname'],
             ('first last', 'new fullname')
@@ -246,7 +247,7 @@ class SimpleTestCase(TestCase):
 
         history = self.alias.get_history()
         self.assertEqual(len(history), 2)
-        self.assertEqual(history[0].changed.keys(), ['alias_name'])
+        self.assertIn('alias_name', history[0].changed.keys())
 
     def test_usera_alias_history(self):
         history = self.user.get_alias_history()
@@ -255,7 +256,7 @@ class SimpleTestCase(TestCase):
         self.alias.save()
         history = self.user.get_alias_history()
         self.assertEqual(len(history), 2)
-        self.assertEqual(history[0].changed.keys(), ['alias_name'])
+        self.assertIn('alias_name', history[0].changed.keys())
 
         x = EmailAlias.objects.create(
             alias_name="new.name",
