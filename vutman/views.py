@@ -2,6 +2,7 @@ from django.shortcuts import render_to_response, redirect
 from django.template import RequestContext
 from django.core.urlresolvers import reverse
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from vutman.models import EmailUser, EmailAlias, EmailDomain
 from vutman.search_indexes import search_emailaliases, search_emailuser
 from vutman.forms import EmailUserForm, EmailAliasForm
@@ -48,6 +49,7 @@ def emailuser_details(request, pk=None):
         try:
             emailuser = EmailUser.objects.get(pk=pk)
         except Exception:
+            messages.warning(request, 'Failed to find user with id %s' % pk)
             return redirect(reverse('index'))
 
     domain_list = EmailDomain.objects.all()
@@ -58,13 +60,19 @@ def emailuser_details(request, pk=None):
         if 'alias_name' in request.POST:
             formset = EmailAliasForm(request.POST)
             if formset.is_valid():
+                messages.success(request, 'alias %s was updated' % formset)
                 formset.save()
+            else:
+                messages.warning(request, 'alias %s update failed' % formset)
             ALIAS_POST = True
         else:
             form = EmailUserForm(request.POST, instance=emailuser)
             if form.is_valid():
+                messages.success(request, 'User %s was updated' % emailuser)
                 form.save()
                 return(redirect(form.instance.get_absolute_url()))
+            else:
+                messages.warning(request, 'User %s update failed' % emailuser)
     else:
         form = EmailUserForm(instance=emailuser)
 
@@ -100,7 +108,9 @@ def emailalias_delete(request, pk):
     try:
         emailalias = EmailAlias.objects.get(pk=pk)
         emailalias.delete()
+        messages.success(request, 'Alias %s was deleted' % emailalias)
     except Exception:
+        messages.warning(request, 'Alias with id %s was not found' % pk)
         return redirect(reverse('index'))
     return redirect(emailalias.username.get_absolute_url())
 
@@ -119,7 +129,10 @@ def emailalias_details(request, pk=None):
             emailalias = form.instance
 
         if form.is_valid():
+            messages.success(request, 'Alias %s was updated' % emailalias)
             form.save()
+        else:
+            messages.warning(request, 'Alias %s update failed' % emailalias)
 
     return redirect(emailalias.username.get_absolute_url())
 
@@ -127,6 +140,7 @@ def emailalias_details(request, pk=None):
 @login_required
 def search(request):
     if 'q' not in request.GET:
+        messages.warning(request, 'Missing query')
         return redirect("/vutman/?missing_query_string")
 
     query_string = request.GET['q']
@@ -169,6 +183,7 @@ def search(request):
     # If no results, then do not show the results page.
     # Just stay on the search page with a nice message.
     if len(all_list) == 0:
+        messages.warning(request, 'failed to find any results')
         return redirect(reverse('index'))
 
     return render_to_response(

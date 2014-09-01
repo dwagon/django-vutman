@@ -267,6 +267,15 @@ class SimpleTestCase(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn(self.user.get_absolute_url(), response.url)
 
+    def test_userdetails_via_post_bad_alias(self):
+        response = self.client.post(
+            reverse('emailuser.details', kwargs={'pk': self.user.pk}),
+            {
+                'alias_name': None,
+            }
+        )
+        self.assertEqual(response.status_code, 200)
+
     def test_userdetails_via_post_good_form_to_user_user(self):
         response = self.client.post(reverse('emailuser.new'), {
             'username': 'new_username_set_by_post',
