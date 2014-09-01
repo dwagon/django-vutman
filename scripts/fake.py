@@ -27,7 +27,7 @@ def run(numbers=1):
         emaildomain_list.append(o)
 
     for i in range(FAKE_USERS):
-        print i
+        print(i)
         o = EmailUser.objects.create(
             username="username_%d" % i,
             fullname="fullname_%d" % i,

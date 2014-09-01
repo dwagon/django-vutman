@@ -4,7 +4,7 @@ import sys
 
 
 def run(filename):
-    print "Skipping imported names, etc"
+    print("Skipping imported names, etc")
 
     #
     email_server_list = EmailServer.objects.all()
@@ -52,7 +52,7 @@ def run(filename):
             es = EmailServer.objects.get(email_server=server)
 
         if user not in email_user_name_list:
-            print user
+            print(user)
             eu = EmailUser.objects.create(
                 username=user,
                 email_server=es
