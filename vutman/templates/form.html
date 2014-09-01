@@ -16,6 +16,9 @@
 <p>Details about the user & their email server.</p>
 </div>
 {% crispy form form.helper %}
+<h4>Delete {{emailuser.username}}, for now and forever!</h4>
+<a href="/vutman/user/{{emailuser.pk}}/delete/" class="btn btn-danger">delete</a>
+<Hr />
 </div>
 
 {% if formset %}

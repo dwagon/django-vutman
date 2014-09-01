@@ -104,6 +104,17 @@ def emailuser_details(request, pk=None):
 
 
 @login_required
+def emailuser_delete(request, pk):
+    try:
+        emailuser = EmailUser.objects.get(pk=pk)
+        emailuser.delete()
+        messages.success(request, 'User %s was deleted' % emailuser)
+    except Exception:
+        messages.warning(request, 'User with id %s was not found' % pk)
+    return redirect(reverse('index'))
+
+
+@login_required
 def emailalias_delete(request, pk):
     try:
         emailalias = EmailAlias.objects.get(pk=pk)

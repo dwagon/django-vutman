@@ -289,3 +289,15 @@ class SimpleTestCase(TestCase):
     def test_userdetails_has_new_form(self):
         response = self.client.get(reverse('emailuser.new'))
         self.assertEqual(response.status_code, 200)
+
+    def test_emailuser_delete(self):
+        response = self.client.get(reverse('emailuser.delete',
+                                           kwargs={'pk': 1}))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('index'), response.url)
+
+    def test_emailuser_delete_missing_id(self):
+        response = self.client.get(reverse('emailuser.delete',
+                                           kwargs={'pk': 10000}))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('index'), response.url)
