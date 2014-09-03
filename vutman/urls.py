@@ -13,7 +13,7 @@ urlpatterns = [
     url(r'^alias/(?P<pk>\d+)/$', views.emailalias_details,
         name='emailalias.details'),
     url(r'^alias/new/$', views.emailalias_details,
-        name='emailalias.details'),
+        name='emailalias.new'),
     url(r'^alias/(?P<pk>\d+)/delete/$', views.emailalias_delete,
         name='emailalias.delete'),
 

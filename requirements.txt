@@ -6,4 +6,5 @@ six
 coverage
 tox
 coveralls
+psycopg2
 git+https://github.com/daniellawrence/django-cuser@python3_port

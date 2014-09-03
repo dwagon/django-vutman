@@ -1,7 +1,7 @@
 from django.db import models
-from cuser.fields import CurrentUserField
 from django.core.urlresolvers import reverse
 from simple_history.models import HistoricalRecords
+# from cuser.fields import CurrentUserField
 
 
 class VutmanModel(models.Model):
@@ -12,7 +12,7 @@ class VutmanModel(models.Model):
     )
     state = models.CharField(max_length=1, choices=STATE_CHOICES, default="E")
     last_modified = models.DateTimeField(auto_now=True, auto_now_add=True)
-    last_modified_by = CurrentUserField()
+    # last_modified_by = CurrentUserField()
 
     def get_absolute_url(self):
         object_type = self.__class__.__name__.lower()
