@@ -15,13 +15,13 @@ def run(numbers=1):
 
     for i in range(FAKE_SERVERS):
         o = EmailServer.objects.create(
-            email_server="server_%d" % i
+            email_server="server_%d.com" % i
         )
         o.save()
         emailserver_list.append(o)
 
         o = EmailDomain.objects.create(
-            domain_name="domain_%d" % i
+            domain_name="domain_%d.com" % i
         )
         o.save()
         emaildomain_list.append(o)
@@ -30,20 +30,20 @@ def run(numbers=1):
         print(i)
         o = EmailUser.objects.create(
             username="username_%d" % i,
-            fullname="fullname_%d" % i,
+            fullname="firstname_%d lastname" % i,
             email_server=random.choice(emailserver_list)
         )
         o.save()
         o.fullname = "fullname %d" % i
         o.save()
         e = EmailAlias.objects.create(
-            alias_name="alias_%d" % i,
+            alias_name="firstname%d_last" % i,
             username=o,
             email_domain=random.choice(emaildomain_list)
         )
         e.save()
         e = EmailAlias.objects.create(
-            alias_name="alias.%d" % i,
+            alias_name="alias.lastname%d" % i,
             username=o,
             email_domain=random.choice(emaildomain_list)
         )
