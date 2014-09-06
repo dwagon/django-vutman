@@ -11,13 +11,14 @@
 
 <div class="row">
 {% if user_list %}
-<div class="col-lg-6 col-md-6 col-sm-4">
+<div class="col-lg-6 col-md-6 col-sm-5">
 <h3>Users</h3>
 <ul class="searchlist" >
   {% for user in user_list %}
   <li>
     <a href="{{user.get_absolute_url}}">
       <strong> {{user}} </strong> {{user.fullname}}
+      @{{user.email_server}}
     </a>
   </li>
   {% endfor %}
@@ -26,13 +27,14 @@
 {% endif %}
 
 {% if alias_list %}
-<div class="col-lg-6 col-md-6 col-sm-8">
+<div class="col-lg-6 col-md-6 col-sm-7">
   <h3>Aliases</h3>
 <ul class="searchlist" >
   {% for alias in alias_list %}
   <li>
     <a href="{{alias.username.get_absolute_url}}">
-      {{alias}}: {{alias.username}} {{alias.username.fullname}}
+      {{alias}}: {{alias.username.fullname}}
+      {{alias.username}}@{{alias.username.email_server}}
     </a>
   </li>
   {% endfor %}
