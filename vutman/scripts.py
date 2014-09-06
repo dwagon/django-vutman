@@ -20,3 +20,4 @@ def generate_vut_to_file(filename):
     assert os.path.exists(tmp_filename)
     os.popen("mv %s %s" % (tmp_filename, filename)).read()
     assert os.path.exists(filename)
+    assert not os.path.exists(tmp_filename)
