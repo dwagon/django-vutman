@@ -23,7 +23,7 @@ from django.forms.models import inlineformset_factory
 
 EmailAliasFormSet = inlineformset_factory(
     EmailUser, EmailAlias, fk_name="username",
-    extra=1, can_delete=True
+    extra=1, can_delete=True, exclude=[]
 )
 
 
