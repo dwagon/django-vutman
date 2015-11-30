@@ -11,7 +11,7 @@ class VutmanModel(models.Model):
         ('X', 'Deleted'),
     )
     state = models.CharField(max_length=1, choices=STATE_CHOICES, default="E")
-    last_modified = models.DateTimeField(auto_now_add=True)
+    last_modified = models.DateTimeField(auto_now=True)
     # last_modified_by = CurrentUserField()
 
     def get_absolute_url(self):
