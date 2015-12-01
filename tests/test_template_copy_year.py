@@ -11,5 +11,5 @@ class SimpleTestCase(TestCase):
         now = datetime.datetime.now()
         current_year = datetime.datetime.strftime(now, '%Y')
         license_text = open(BASE_TEMPLATE).read()
-        expected_text = 'Copyright (c) %s' % current_year
+        expected_text = 'Copyright \xc2\xa9 {0}'.format(current_year)
         self.assertIn(expected_text, license_text)
