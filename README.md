@@ -52,4 +52,3 @@ The tests configured using tox, just install tox and away you go!
 	workon djangovutman
 	pip intall tox
 	tox
-	
