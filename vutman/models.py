@@ -1,14 +1,15 @@
 from django.db import models
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from simple_history.models import HistoricalRecords
+
 # from cuser.fields import CurrentUserField
 
 
 class VutmanModel(models.Model):
     STATE_CHOICES = (
-        ('E', 'Enabled'),
-        ('D', 'Disabled'),
-        ('X', 'Deleted'),
+        ("E", "Enabled"),
+        ("D", "Disabled"),
+        ("X", "Deleted"),
     )
     state = models.CharField(max_length=1, choices=STATE_CHOICES, default="E")
     last_modified = models.DateTimeField(auto_now=True)
@@ -16,7 +17,7 @@ class VutmanModel(models.Model):
 
     def get_absolute_url(self):
         object_type = self.__class__.__name__.lower()
-        return reverse('%s.details' % object_type, args=[str(self.id)])
+        return reverse("%s.details" % object_type, args=[str(self.id)])
 
     def disable(self):
         self.state = "D"
@@ -45,7 +46,7 @@ class EmailDomain(VutmanModel):
 class EmailUser(VutmanModel):
     username = models.CharField(max_length=200)
     fullname = models.CharField(max_length=200, blank=True)
-    email_server = models.ForeignKey(EmailServer)
+    email_server = models.ForeignKey(EmailServer, on_delete=models.CASCADE)
     active_directory_basedn = models.CharField(blank=True, max_length=200)
     history = HistoricalRecords()
 
@@ -53,7 +54,7 @@ class EmailUser(VutmanModel):
         return self.username
 
     class Meta:
-        unique_together = (("username", "email_server"))
+        unique_together = ("username", "email_server")
 
     def get_alias_history(self):
         alias_history = []
@@ -66,18 +67,24 @@ class EmailUser(VutmanModel):
         history_all = []
         last = self.__dict__
         last = {}
-        for history in self.history.all().order_by('history_id'):
+        for history in self.history.all().order_by("history_id"):
             change = {}
             for k, v in history.__dict__.items():
                 if k in [
-                        '_state', 'last_modified', 'last_modified_by',
-                        'history_id', 'history_type', 'history_date',
-                        'history_user_id', 'last_modified_by_id', 'id',
-                        ]:
+                    "_state",
+                    "last_modified",
+                    "last_modified_by",
+                    "history_id",
+                    "history_type",
+                    "history_date",
+                    "history_user_id",
+                    "last_modified_by_id",
+                    "id",
+                ]:
                     continue
 
                 if history.history_type == "+":
-                    change[k] = ('', v)
+                    change[k] = ("", v)
                     continue
 
                 if k in last and last[k] != v:
@@ -85,12 +92,12 @@ class EmailUser(VutmanModel):
 
             last = history.__dict__
             # if change:
-            history.__dict__['changed'] = change
+            history.__dict__["changed"] = change
             history_all.append(history)
         return history_all
 
     def _suggested_aliases(self):
-        " Suggest aliases for the user "
+        "Suggest aliases for the user"
         aliases = []
         names = self.fullname.split()
         aliases.append(".".join(names))
@@ -99,7 +106,7 @@ class EmailUser(VutmanModel):
         return aliases
 
     def suggested_aliases(self):
-        " Suggest aliases for the user without any duplicates "
+        "Suggest aliases for the user without any duplicates"
         aliases = self._suggested_aliases()
         new_aliases = []
         known_aliases = [a.alias_name for a in EmailAlias.objects.all()]
@@ -111,12 +118,12 @@ class EmailUser(VutmanModel):
 
     def guess_fullname(self):
         for my_alias in EmailAlias.objects.filter(username=self):
-            if '_' in my_alias.alias_name:
-                name = ' '.join(my_alias.alias_name.split('_'))
+            if "_" in my_alias.alias_name:
+                name = " ".join(my_alias.alias_name.split("_"))
                 return name
 
-            if '.' in my_alias.alias_name:
-                name = ' '.join(my_alias.alias_name.split('.'))
+            if "." in my_alias.alias_name:
+                name = " ".join(my_alias.alias_name.split("."))
                 return name
 
     def set_guessed_name(self):
@@ -129,8 +136,8 @@ class EmailUser(VutmanModel):
 
 class EmailAlias(VutmanModel):
     alias_name = models.CharField(max_length=50)
-    username = models.ForeignKey(EmailUser)
-    email_domain = models.ForeignKey(EmailDomain)
+    username = models.ForeignKey(EmailUser, on_delete=models.CASCADE)
+    email_domain = models.ForeignKey(EmailDomain, on_delete=models.CASCADE)
     history = HistoricalRecords()
 
     def __str__(self):
@@ -141,34 +148,40 @@ class EmailAlias(VutmanModel):
             self.alias_name,
             self.email_domain,
             self.username.username,
-            self.username.email_server
+            self.username.email_server,
         )
 
     def get_history(self):
         from copy import deepcopy
+
         history_all = []
         last = self.__dict__
         for history in self.history.all():
             change = {}
             for k, v in deepcopy(history.__dict__).items():
                 if k == "history_type" and v == "+":
-                    history.__dict__['changed'] = change
+                    history.__dict__["changed"] = change
                     history_all.append(history)
                     continue
                 if k in [
-                        '_state', 'last_modified', 'last_modified_by',
-                        'history_id', 'history_type', 'history_date',
-                        'history_user_id', 'last_modified_by_id'
+                    "_state",
+                    "last_modified",
+                    "last_modified_by",
+                    "history_id",
+                    "history_type",
+                    "history_date",
+                    "history_user_id",
+                    "last_modified_by_id",
                 ]:
                     continue
                 if k in last and last[k] != v:
                     change[k] = (v, last[k])
             last = history.__dict__
             if change:
-                history.__dict__['changed'] = change
+                history.__dict__["changed"] = change
                 history_all.append(history)
         return history_all
 
     class Meta:
-        unique_together = (("alias_name", "email_domain"))
+        unique_together = ("alias_name", "email_domain")
         verbose_name_plural = "aliases"

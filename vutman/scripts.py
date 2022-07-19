@@ -9,12 +9,12 @@ def generate_vut_to_file(filename):
     print("Writing %d aliases out to %s" % (expected_alias_count, filename))
     written_count = 0
     alias_list = EmailAlias.objects.all().iterator()
-    with open(tmp_filename, 'w') as output_fh:
+    with open(tmp_filename, "w") as output_fh:
         for alias in alias_list:
             written_count += 1
-            output_fh.write("%s: %s@%s\n" %
-                            (alias, alias.username,
-                             alias.username.email_server))
+            output_fh.write(
+                "%s: %s@%s\n" % (alias, alias.username, alias.username.email_server)
+            )
 
     assert written_count == expected_alias_count
     assert os.path.exists(tmp_filename)
