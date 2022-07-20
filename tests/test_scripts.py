@@ -37,10 +37,10 @@ class SimpleTestCase(TestCase):
     def test_generate_vut_to_file_many_aliases(self):
         for i in range(0, 5):
             EmailAlias.objects.create(
-                alias_name="alias_%s" % i, username=self.user, email_domain=self.domain
+                alias_name=f"alias_{i}", username=self.user, email_domain=self.domain
             )
             test_file = "/tmp/test_generated_file"
             generate_vut_to_file(test_file)
             self.assertIn(
-                "alias_%s@domain: username@server\n" % i, open(test_file).readlines()
+                f"alias_{i}@domain: username@server\n", open(test_file).readlines()
             )

@@ -47,7 +47,7 @@ def emailuser_details(request, pk=None):
         try:
             emailuser = EmailUser.objects.get(pk=pk)
         except Exception:
-            messages.warning(request, "Failed to find user with id %s" % pk)
+            messages.warning(request, f"Failed to find user with id {pk}")
             return redirect(reverse("index"))
 
     domain_list = EmailDomain.objects.all()
@@ -58,19 +58,19 @@ def emailuser_details(request, pk=None):
         if "alias_name" in request.POST:
             formset = EmailAliasForm(request.POST)
             if formset.is_valid():
-                messages.success(request, "alias %s was updated" % formset)
+                messages.success(request, f"alias {formset} was updated")
                 formset.save()
             else:
-                messages.warning(request, "alias %s update failed" % formset)
+                messages.warning(request, f"alias {formset} update failed")
             ALIAS_POST = True
         else:
             form = EmailUserForm(request.POST, instance=emailuser)
             if form.is_valid():
-                messages.success(request, "User %s was updated" % emailuser)
+                messages.success(request, f"User {emailuser} was updated")
                 form.save()
                 return redirect(form.instance.get_absolute_url())
             else:
-                messages.warning(request, "User %s update failed" % emailuser)
+                messages.warning(request, f"User {emailuser} update failed")
     else:
         form = EmailUserForm(instance=emailuser)
 
@@ -105,9 +105,9 @@ def emailuser_delete(request, pk):
     try:
         emailuser = EmailUser.objects.get(pk=pk)
         emailuser.delete()
-        messages.success(request, "User %s was deleted" % emailuser)
+        messages.success(request, f"User {emailuser} was deleted")
     except Exception:
-        messages.warning(request, "User with id %s was not found" % pk)
+        messages.warning(request, f"User with id {pk} was not found")
     return redirect(reverse("index"))
 
 
@@ -116,9 +116,9 @@ def emailalias_delete(request, pk):
     try:
         emailalias = EmailAlias.objects.get(pk=pk)
         emailalias.delete()
-        messages.success(request, "Alias %s was deleted" % emailalias)
+        messages.success(request, f"Alias {emailalias} was deleted")
     except Exception:
-        messages.warning(request, "Alias with id %s was not found" % pk)
+        messages.warning(request, f"Alias with id {pk} was not found")
         return redirect(reverse("index"))
     return redirect(emailalias.username.get_absolute_url())
 
@@ -137,10 +137,10 @@ def emailalias_details(request, pk=None):
             emailalias = form.instance
 
         if form.is_valid():
-            messages.success(request, "Alias %s was updated" % emailalias)
+            messages.success(request, f"Alias {emailalias} was updated")
             form.save()
         else:
-            messages.warning(request, "Alias %s update failed" % emailalias)
+            messages.warning(request, f"Alias {emailalias} update failed")
 
     return redirect(emailalias.username.get_absolute_url())
 
@@ -180,10 +180,10 @@ def search(request):
                 ONE_USER = False
                 break
         if ONE_USER:
-            return redirect("%s?one_user" % user_list[0].get_absolute_url())
+            return redirect(f"{user_list[0].get_absolute_url()}?one_user")
 
     if len(alias_list) == 1:
-        return redirect("%s?one_alias" % alias_list[0].username.get_absolute_url())
+        return redirect(f"{alias_list[0].username.get_absolute_url()}?one_alias")
 
     # If no results, then do not show the results page.
     # Just stay on the search page with a nice message.

@@ -1,6 +1,7 @@
+""" Tests for vutman person """
 from django.test import TestCase
-from vutman.models import EmailAlias, EmailUser, EmailDomain, EmailServer
 from django.db import IntegrityError
+from vutman.models import EmailAlias, EmailUser, EmailDomain, EmailServer
 
 
 class SimpleTestCase(TestCase):
@@ -73,10 +74,10 @@ class SimpleTestCase(TestCase):
 
     def test_absolute_urls(self):
         self.assertEqual(
-            self.user.get_absolute_url(), "/vutman/user/%d/" % self.user.pk
+            self.user.get_absolute_url(), f"/vutman/user/{self.user.pk}"
         )
         self.assertEqual(
-            self.alias.get_absolute_url(), "/vutman/alias/%d/" % self.alias.pk
+            self.alias.get_absolute_url(), f"/vutman/alias/{self.alias.pk}"
         )
 
         with self.assertRaises(Exception):

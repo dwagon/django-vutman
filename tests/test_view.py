@@ -1,7 +1,8 @@
+""" Test cases for vutman view code """
 from django.test import TestCase, Client
-from vutman.models import EmailAlias, EmailUser, EmailDomain, EmailServer
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.contrib.auth.models import User
+from vutman.models import EmailAlias, EmailUser, EmailDomain, EmailServer
 
 
 class SimpleTestCase(TestCase):
@@ -255,7 +256,7 @@ class SimpleTestCase(TestCase):
         response = self.client.post(
             reverse("emailuser.details", kwargs={"pk": self.user.pk}),
             {
-                "alias_name": None,
+                "alias_name": "",
             },
         )
         self.assertEqual(response.status_code, 200)

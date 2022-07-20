@@ -1,6 +1,7 @@
-from django.test import TestCase
+""" Testing template """
 import os
 import datetime
+from django.test import TestCase
 
 
 class SimpleTestCase(TestCase):
@@ -10,5 +11,5 @@ class SimpleTestCase(TestCase):
         now = datetime.datetime.now()
         current_year = datetime.datetime.strftime(now, "%Y")
         license_text = open(BASE_TEMPLATE).read()
-        expected_text = "Copyright \xc2\xa9 {0}".format(current_year)
+        expected_text = f"Copyright © {current_year}"
         self.assertIn(expected_text, license_text)

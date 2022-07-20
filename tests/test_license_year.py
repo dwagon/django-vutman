@@ -9,5 +9,5 @@ class SimpleTestCase(TestCase):
         now = datetime.datetime.now()
         current_year = datetime.datetime.strftime(now, "%Y")
         license_text = open("LICENSE").read()
-        expected_text = "Copyright (c) %s Daniel Lawrence" % current_year
+        expected_text = f"Copyright (c) {current_year} Daniel Lawrence"
         self.assertIn(expected_text, license_text)
