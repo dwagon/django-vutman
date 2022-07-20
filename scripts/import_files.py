@@ -25,17 +25,17 @@ def run(filename):
         if line.startswith("#"):
             continue
         line = line.strip()
-        (alias_and_domain, user_and_server) = line.split(':')
-        if '@' in alias_and_domain:
-            (alias, domain) = alias_and_domain.strip().split('@')
+        (alias_and_domain, user_and_server) = line.split(":")
+        if "@" in alias_and_domain:
+            (alias, domain) = alias_and_domain.strip().split("@")
         else:
             alias = alias_and_domain.strip()
             domain = None
 
-        if '@' not in user_and_server:
+        if "@" not in user_and_server:
             continue
 
-        (user, server) = user_and_server.strip().split('@')
+        (user, server) = user_and_server.strip().split("@")
 
         if domain not in email_domain_name_list:
             dn = EmailDomain.objects.create(domain_name=domain)
@@ -53,10 +53,7 @@ def run(filename):
 
         if user not in email_user_name_list:
             print(user)
-            eu = EmailUser.objects.create(
-                username=user,
-                email_server=es
-            )
+            eu = EmailUser.objects.create(username=user, email_server=es)
             eu.save()
             email_user_name_list.append(user)
         else:
@@ -64,9 +61,7 @@ def run(filename):
 
         try:
             ea = EmailAlias.objects.create(
-                alias_name=alias,
-                email_domain=dn,
-                username=eu
+                alias_name=alias, email_domain=dn, username=eu
             )
             ea.save()
             eu.set_guessed_name()

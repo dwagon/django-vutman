@@ -11,19 +11,16 @@ class SimpleTestCase(TestCase):
             username="username",
             fullname="first last",
             email_server=self.server,
-            active_directory_basedn="basedn"
+            active_directory_basedn="basedn",
         )
         self.alias = EmailAlias.objects.create(
-            alias_name="alias",
-            username=self.user,
-            email_domain=self.domain
+            alias_name="alias", username=self.user, email_domain=self.domain
         )
 
     def test_generate_vut_to_file(self):
         test_file = "/tmp/test_generated_file"
         generate_vut_to_file(test_file)
-        self.assertEqual(open(test_file).read(),
-                         "alias@domain: username@server\n")
+        self.assertEqual(open(test_file).read(), "alias@domain: username@server\n")
 
     def test_generate_vut_to_file_no_aliases(self):
         test_file = "/tmp/test_generated_file"
@@ -40,11 +37,10 @@ class SimpleTestCase(TestCase):
     def test_generate_vut_to_file_many_aliases(self):
         for i in range(0, 5):
             EmailAlias.objects.create(
-                alias_name="alias_%s" % i,
-                username=self.user,
-                email_domain=self.domain
+                alias_name=f"alias_{i}", username=self.user, email_domain=self.domain
             )
             test_file = "/tmp/test_generated_file"
             generate_vut_to_file(test_file)
-            self.assertIn("alias_%s@domain: username@server\n" % i,
-                          open(test_file).readlines())
+            self.assertIn(
+                f"alias_{i}@domain: username@server\n", open(test_file).readlines()
+            )
