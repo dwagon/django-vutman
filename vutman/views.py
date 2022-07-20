@@ -155,7 +155,6 @@ def search(request):
 
     user_list = []
     alias_list = []
-    all_list = []
 
     if "alias" in request.GET:
         alias_list = search_emailaliases(query_string)

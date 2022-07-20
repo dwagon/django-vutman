@@ -1,3 +1,4 @@
+""" Models definition for VUTMAN """
 from django.db import models
 from django.urls import reverse
 from simple_history.models import HistoricalRecords
@@ -65,7 +66,6 @@ class EmailUser(VutmanModel):
 
     def get_history(self):
         history_all = []
-        last = self.__dict__
         last = {}
         for history in self.history.all().order_by("history_id"):
             change = {}
@@ -97,7 +97,7 @@ class EmailUser(VutmanModel):
         return history_all
 
     def _suggested_aliases(self):
-        "Suggest aliases for the user"
+        """Suggest aliases for the user"""
         aliases = []
         names = self.fullname.split()
         aliases.append(".".join(names))
@@ -106,7 +106,7 @@ class EmailUser(VutmanModel):
         return aliases
 
     def suggested_aliases(self):
-        "Suggest aliases for the user without any duplicates"
+        """Suggest aliases for the user without any duplicates"""
         aliases = self._suggested_aliases()
         new_aliases = []
         known_aliases = [a.alias_name for a in EmailAlias.objects.all()]

@@ -3,6 +3,8 @@ from vutman.models import EmailUser, EmailAlias
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Submit
 
+from django.forms.models import inlineformset_factory
+
 
 class CrispyForm(ModelForm):
     def __init__(self, *args, **kwargs):
@@ -19,8 +21,6 @@ class EmailUserForm(CrispyForm):
         model = EmailUser
         exclude = []
 
-
-from django.forms.models import inlineformset_factory
 
 EmailAliasFormSet = inlineformset_factory(
     EmailUser, EmailAlias, fk_name="username", extra=1, can_delete=True, exclude=[]

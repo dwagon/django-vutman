@@ -7,8 +7,8 @@ from django.contrib import admin
 admin.autodiscover()
 
 urlpatterns = [
-        path("vutman", include("vutman.urls")),
-        path("admin", admin.site.urls),
+        path("vutman/", include("vutman.urls")),
+        path("admin/vutman/", admin.site.urls),
         path("", RedirectView.as_view(url="/vutman/")),
         path("accounts/", include("django.contrib.auth.urls"))
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
