@@ -1,0 +1,14 @@
+# For apache copy this to where your httpd configuration will be read - rename to vutman.conf
+<VirtualHost *:80>
+    ErrorLog /var/log/httpd/vutman-error.log
+    CustomLog /var/log/httpd/vutman-access.log combined
+
+    ProxyPreserveHost On
+    Alias /static /opt/vutman/static
+    ProxyPass /vutman http://127.0.0.1:8000/vutman
+    ProxyPass /admin http://127.0.0.1:8000/admin
+    ProxyPassReverse /vutman http://127.0.0.1:8000/vutman
+    <Directory /opt/vutman/static>
+        Require all granted
+     </Directory>
+</VirtualHost>

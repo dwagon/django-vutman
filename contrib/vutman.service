@@ -1,0 +1,12 @@
+# Copy this file to /etc/systemd/system/vutman.service
+# and do: sudo systemctl daemon-reload
+[Unit]
+Description=Vutman
+After=network-online.target
+
+[Service]
+ExecStart=/opt/vutman/django-vutman/contrib/start.sh
+PidFile=/var/run/vutman.pid
+
+[Install]
+WantedBy=multi-user.target
