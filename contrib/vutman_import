@@ -1,0 +1,1295 @@
+#!/usr/bin/env python
+# $Id$
+# 2.	distrobution list (aliases)
+# 3.	distrobution list (external)
+# 6.	sms_script	alias:  |/script with sms in it
+# 7.	to_logfile	alias:	/path/to/log
+# 8.	alias-alias	alias:	alias
+# 9.	aliases(name)	alias:	alaias.alias@domain
+
+#--------------------------------------------------------
+# VUT -- file
+# 10.   dom_alias       alias@dom:      user
+# 11.   dom_user        alias@dom:      user@server
+# 12.   dom_user        alias@dom:      alias@domain
+# 13.   dom_user        alias: 		alias@domain
+
+#--------------------------------------------------------
+# Errors -
+# -8.	%			Vut foo
+# -7.	slash		slash in the user/alias
+# -6.	manyats		Too many ats (non-distro)
+# -5.	space		how did a space get in here...kkk
+# -4.   manycols        too many cols ::::
+# -3.   nocols          missing a col :?
+# -2.   comment         #................
+# -1.   unknown         anything left over
+
+#--------------------------------------------------------
+# Aliases Flags
+#--------------------------------------------------------
+
+USER__USER_SERVER=1
+ALIAS_USER=2
+
+DISTRO_LIST=3
+
+ALIAS_SCRIPT=4
+ALIAS_DEVNULL=5
+ALIAS_SMS=6
+ALIAS_LOGFILE=7
+ALIAS_ALIAS=8
+USER__ALIAS_DOMAIN=9
+
+#--------------------------------------------------------
+# Virtual User Table Flags
+#--------------------------------------------------------
+ALIAS_DOMAIN__USER=10
+ALIAS_DOMAIN__USER_SERVER=11
+ALIAS_DOMAIN__ALIAS_DOMAIN=12
+ALIAS__ALIAS_DOMAIN=13
+
+#--------------------------------------------------------
+# Import / Syntax Error Flags
+#--------------------------------------------------------
+ERROR_UKNOWN=-1		# Unknown errors
+ERROR_COMMENT=-2	# Comments
+ERROR_NOCOLS=-3		# Missing a col (:) from the line
+ERROR_MANY_COLS=-4	# Too many col (:) in the line
+ERROR_SPACE=-5		# Space shouldn't be here
+ERROR_MANY_ATS=-6	# To many ats (@) in the line
+ERROR_SLASH=-7		# Slash in the line
+ERROR_VUTFOO=-8		# Evil VUT Foo
+ERROR_ALIASFOO=-9	# Evil ALIASES Foo
+
+modified_by = "vutman_import.py"
+
+################################################################################
+
+import sys, os, re, MySQLdb
+import optparse
+
+# Set the path from get_python_lib()
+from distutils.sysconfig import get_python_lib
+import os.path
+sys.path.append(os.path.join(get_python_lib(), "vutman"))
+os.environ['DJANGO_SETTINGS_MODULE'] = 'vutman.settings'
+
+# Load up Django
+from django.db import models
+from django.db import utils
+from vutman.mail.models import Raw, Server, User, Domain, Alias, Script
+
+user_exception_list = set([])
+for usr_excptn in open(get_python_lib() + "/vutman/user_exceptions.txt", "r"):
+	usr_excptn = usr_excptn.replace('\n','')
+	user_exception_list.add(usr_excptn)
+
+
+#------------------------------------------------------------------------------
+# Things that i need TODO...
+#------------------------------------------------------------------------------
+# * PHASE 1:
+# TODO: replace all prints with Verbose, Warning, Fatal.
+# TODO: warnings / errors to stderr ( debug method).
+# TODO: Add return True / False to everything.
+# TODO: replace all generic exception catches with locked down exception.
+#
+# * PHASE 2:
+# TODO: Add custom exceptions.
+
+#-------------------------------------------------------------------------------
+def unhandled_import(line, msg, import_flag=0):
+	""" 
+		When we known there is line that we know we can't handle, Send a warning
+		Save it to a file & then write it to the RAW table in the database.
+	"""
+	uhl =  open("/tmp/unhandled_lines", "w")
+	uhl.write(line + "\n")
+	uhl.close()
+	Warning("Unhandled_import: line='%s' %s  " % (line, msg))
+	left_right(line, import_flag)
+
+#-------------------------------------------------------------------------------
+def Verbose(msg):
+	""" Send a message to standard error """
+	verbFlag = True
+	if verbFlag:
+		print "%s" % msg
+		sys.stderr.write("%s\n" % msg)
+
+#-------------------------------------------------------------------------------
+def Warning(msg):
+	""" Send a WARNING message to standard error """
+	sys.stderr.write("Warning: %s\n" % msg)
+
+#-------------------------------------------------------------------------------
+def Fatal(msg):
+	""" Send a Error message to standard error, then exit with Return code 255 """
+	sys.stderr.write("Fatal: %s\n" % msg)
+	sys.exit(255)
+
+
+#-------------------------------------------------------------------------------
+def save_rawline(line,flag=-1):
+	left_right(line,flag)
+
+#-------------------------------------------------------------------------------
+def left_right(line,flag=-1):
+	global modified_by
+
+	line.strip()
+	# Could be an error, I am in the process of moving away from flag zero has ok
+	# flag 0 will know be ERROR_UNKNOWN
+	if flag == 0:
+			Warning("left_right: status=%d possible exception with line='%s'" % (flag, line ))
+	
+	# normal
+	if flag >= 0:
+		try:
+			if ':' in line:
+				l,r = line.split(':')
+			raw_o = Raw(left=l,right=r,flag=flag,modified_by=modified_by)
+			result = raw_o.save()
+		except ValueError:
+			Warning("left_right: unable to save line=%s to database." %  line)
+		except Exception:
+			Warning("left_right: unable to save line=%s to database." %  line)
+			#raise e
+		return 0
+
+	# Error... save it to the database
+	if flag < 0:
+		raw_o = Raw(left=line,right="",flag=flag,modified_by=modified_by)
+		result = raw_o.save()
+		return 1
+
+#-------------------------------------------------------------------------------
+def import_to_leftright(import_file=""):
+	""" The goal of this to to take the import_file and import each line into the
+		RAW table of the database. The magic of this method is that it will assign
+		a flag to each line, so i can process it later.
+	"""
+
+	# Let the user known we are import a file, this may take some time.
+	Verbose("import_to_leftright: Importing file=%s to database." % import_file)
+	
+	# list holders
+	domain_list = set([])
+	server_list = set([])
+	user_list = set([])
+	alias_list = set([])
+
+	# 
+	distro_list = set([])
+	
+	# Get the default the domain..
+	Verbose( "Get default domain (tollgroup.com) from database" )
+	domain = Domain.objects.get(domain="tollgroup.com")
+
+	# Counters for summary, and error dection
+	linecount = -1
+
+	Verbose( "Population domain_list from database" )
+	for dmn in Domain.objects.all():
+		domain_list.add(dmn.domain)
+
+	Verbose( "Population server_list from database" )
+	for server in Server.objects.all():
+		server_list.add(server.servername)
+
+	Verbose( "Population alias_list from database" )
+	for alias in Alias.objects.all():
+		alias_list.add(alias.alias)
+
+	Verbose( "Population user_list from database" )
+	for user in User.objects.all():
+		user_list.add(user.user)
+	
+	###############################################################
+	# let the user know we are starting the big loop
+	Verbose( "Starting read of import_file=%s" % import_file )
+
+	# Loop over the import_file, and try to import each line to the RAW table.
+	for line in open(import_file):
+		linecount += 1
+
+		# Dont waste time on comments
+		if line.startswith('#'):
+			continue
+
+		# remove extra line breaks
+		line = line.replace('\n','')
+
+		# Replace spaces with tabs
+		line = line.replace(' ','\t')
+
+		# Replace bad strings in import line
+		line = line.replace('\xB2','')
+		
+		# Keep a count for the uncomming loop, i dont want to get stuck in there.
+		loop_count = 0
+		# Replace multi tabs with a single tab.
+		while line.count('\t') > 1:
+			Verbose( "import_to_leftright: replacing TABTAB with TAB in line='%s'" % line)
+			line = line.replace('\t\t','\t')
+			loop_count += 1
+			if loop_count > 10:
+				Verbose( "import_to_leftright: line '%s' has too many tabs" % line )
+				break
+
+		# Replace the lone single tab with a coln, if it dosn't already have a coln
+		if ':' in line:
+			line = line.replace('\t','')
+		else:
+			line = line.replace('\t',':')
+
+		# Replace any left of spaces with NULL
+		line = line.replace(' ','')
+
+		# Strip the line, of any whitespace..
+		line = line.strip()
+
+		Verbose( "import_to_leftright: The line now looks like this line='%s'" % line )
+		
+		# Dont waste time on blank lines
+		if not line:
+			continue
+		
+		# Ignore lines that start with an '@'
+		if line.startswith('@'):
+			unhandled_import(line, "Lines starts with an @", ERROR_ALIASFOO)
+			continue
+
+		# Dont try to handle the following vut-foo
+		if '%' in line:
+			unhandled_import(line, "Lines starts with an %", ERROR_VUTFOO)
+			continue
+
+		# Ignore lines for postmaster, we add that for every domain
+		# When we generate these anyway.
+		#if line.startswith('postmaster@'):
+		#	unhandled_import(line, "Lines starts with an postmaster@", ERROR_VUTFOO)
+		#	continue
+
+		# Cleanup syntax errors,
+		#############################################
+		# To many cols is bad...
+		if line.count(':') > 1:
+			unhandled_import(line, "Too many ':'s", ERROR_MANY_COLS)
+			continue
+
+		# Not enough cols is also bad..
+		if ':' not in line:
+			unhandled_import(line, "Too many ':'s", ERROR_NOCOLS)
+			continue
+
+		# Once the line is sane....
+		# Remove case, eg. everything is set to lower
+		line = line.lower()
+	
+		# Cut up the line from the external file
+		# We do this to work out what we have...
+		(left,right) = line.split(':')
+
+		# Strip away the whitespace, there shouldn't be any but... just incase
+		# could be removed to incrase performance
+		left = left.strip()
+		right = right.strip()
+
+		# check if the left or right side of the col is blank
+		if not left or not right:
+			unhandled_import(line, "Not enough information",ERROR_SPACE)
+			continue
+
+		# Validate the .strip() function
+		if ' ' in line:
+			unhandled_import(line, "Space in line",ERROR_SPACE)
+			continue
+		
+		# Distro list: External?
+		if ',' in right and '@' in right:
+			unhandled_import(line, "Distrobution list (External)", DISTRO_LIST)
+			continue
+
+		# Distro list: Interal (aliases)
+		if ',' in right and ( '_' in right or '.' in right ):
+			unhandled_import(line, "Distrobution list (Internal)", DISTRO_LIST)
+			continue
+
+		# Distro list: Interal (usernames)	
+		# This is sperated from alises, in case we want to handle it differently later.
+		if ',' in line:
+			unhandled_import(line, "Distrobution list (Internal)", DISTRO_LIST)
+			continue
+
+		# Clean up syntax errors, in the line
+		if right.count('@') > 1 or left.count('@') > 1:
+			unhandled_import(line, "Too many '@'s", ERROR_MANY_ATS)
+			continue
+
+		# emails are going to /dev/null, save incase we need to reject them,
+		if '/dev/null' in line:
+			unhandled_import(line, "alias point at /dev/null", ALIAS_DEVNULL)
+			continue
+
+		# Emails are converted to a SMS script
+		if '|' in right and 'sms' in line:
+			unhandled_import(line, "alias point at sms script", ALIAS_SMS)
+			continue
+
+		# Emails are converted to a log file
+		if '/' in right and '.log' in line:
+			unhandled_import(line, "alias point at log file", ALIAS_LOGFILE)
+			continue
+
+		# Emails are converted to a script
+		if '|' in right or '/' in right:
+			unhandled_import(line, "alias point at a script", ALIAS_SCRIPT)
+			continue
+
+		###########################################################
+		# email address ( with domain )
+		# alias@domain: something@somthing
+		if '@' in left and '@' in right:
+			(user,server) = right.split('@')
+
+			if ".toll.com.au" not in server:
+				Verbose( "ALIAS_DOMAIN__ALIAS_DOMAIN: line=%s" % ( line ))
+				save_rawline(line,ALIAS_DOMAIN__ALIAS_DOMAIN)
+			else:
+				Verbose( "line,ALIAS_DOMAIN__USER_SERVER: line=%s" % ( line ) )
+				save_rawline(line,ALIAS_DOMAIN__USER_SERVER)
+			continue
+
+		# email address ( without domain )
+		if '@' in left and '@' not in right:
+			user = right
+
+			if not_user(user):
+				# 13.	dom_user		alias@dom:		alias
+				save_rawline(line,ALIAS__ALIAS_DOMAIN)
+			else:
+				# 10.   dom_alias       alias@dom:      user
+				save_rawline(line,ALIAS_DOMAIN__USER)
+			continue
+		
+		# email address ( without domain )
+		if '@' not in left and '@' in right:
+			(user,server) = right.split('@')
+			
+			if ".toll.com.au" not in server:
+				Verbose("status=%s line=%s" % ( "USER__ALIAS_DOMAIN" , line ))
+				left_right(line,USER__ALIAS_DOMAIN)
+			else:
+				Verbose("status=%d line=%s" % ( 1 , line ))
+				left_right(line,1)
+
+			
+			continue
+			
+		# user alias  ( without domain )
+		if '@' not in right and '@' not in left:
+			if not_user(right):
+				#alias to alias
+				left_right(line,8)
+				Verbose("status=%d line=%s" % ( 8 , line ))
+			else:
+				#alias to user
+				left_right(line,ALIAS_USER)
+				Verbose("status=%d line=%s" % ( 2 , line ))
+			continue
+
+		# -----------------------------------------------
+		# Unknown... how did we get here.....
+		unhandled_import(line, "Unabled to handle this line", ERROR_UNOWN)
+		continue
+
+	########################################################################
+
+############################################################
+def clean_db():
+	" Clean up database import "
+	
+	clean_domain()
+	clean_server()
+	clean_user()
+	clean_alias()
+	#clean_raw()
+
+############################################################
+def clean_domain():
+	global modified_by
+	Verbose( "clean_domain: Starting to delete all domains from database." )
+	for domain in Domain.objects.all():
+		try:
+			domain.delete()
+		except Exception:
+			Warning( "clean_domain: failed to delete domain=%s" % domain )
+
+	Verbose( "clean_domain: Deleted all domains from database." )
+
+	try:
+		Verbose( "clean_domain: adding default domain=tollgroup.com" )
+		domain = Domain(domain="tollgroup.com", description="Default Toll group domain")
+		domain.internal="0"
+		domain.selectable="0"
+		domain.modified_by=modified_by
+		domain.save()
+	except Exception as e:
+		raise e
+		Warning( "clean_domain: unable to add default domain")
+
+############################################################
+def clean_server():
+	Verbose( "clean_server: Removing all mail servers" )
+	for server in Server.objects.all():
+		try:
+			server.delete()
+		except Exception:
+			Warning( "clean_server: failed to delete server=%s" % server )
+	Verbose( "clean_servers: Deleted all servers from database."  )
+
+############################################################
+def clean_alias():
+
+	print "Removing all alias"
+	for alias in Alias.objects.all():
+		alias.delete()
+	print "Done."
+
+############################################################
+def clean_user():
+	" Clean up database import "
+	print "Removing all users"
+	for user in User.objects.all():
+		user.delete()
+	print "Done."
+
+############################################################
+def clean_raw():
+	print "Removing everythin from RAW table"
+	for raw in Raw.objects.all():
+		raw.delete()
+	print "Done."
+		
+############################################################
+def process_leftright():
+	""" Process all imported data from the raw table in the database.
+		each of the process_* returns the number of records left to be
+		processed. This can be used to loop over unprocessed records.
+	"""
+	Verbose("Processing over all imported data")
+	process_devnull()
+	process_users()
+	process_user_aliasdomain()
+	process_alias()
+	process_aliasdomain_aliasdomain()
+	
+	Verbose( "ALIAS_DOMAIN__USER left %d" % Raw.objects.filter(flag=ALIAS_DOMAIN__USER).count() )
+	process_vutusers()
+	Verbose( "ALIAS_DOMAIN__USER left %d" % Raw.objects.filter(flag=ALIAS_DOMAIN__USER).count() )
+	process_vutusers_ws()
+	process_distro()
+
+	count = 0
+	# Where there is records too be processed... process them.
+	while process_aliasalias() > 0:
+		count += 1
+		# If we have had 10 tries at processing users, then giveup.
+		if count > 1:
+			Warning("Couldn't map the following lines")
+			uhl =  open("/tmp/unhandled_lines", "w")
+			Warning("%s" % Raw.objects.filter(flag=ALIAS_ALIAS) )
+			uhl.write("\n")
+			uhl.write("WARNING: The following lines couldn't be mapped to aliases.")
+			uhl.write("\n")
+			for line in Raw.objects.filter(flag=ALIAS_ALIAS):
+				uhl.write("%s\n" % line)
+			uhl.close()
+			break
+
+	Verbose("Completed processing data from raw table.")
+
+def process_users():
+	###################################################
+	# loop over user: user@server
+
+	global modified_by
+	for raw in Raw.objects.filter(flag=USER__USER_SERVER):
+		Verbose( "USER__USER_SERVER: raw='%s' " % raw )
+		alias = raw.left
+		(user,server) = raw.right.split('@')
+
+		
+		Verbose( "process_users: found (new?) server=%s" % (  server ) )
+		add_server(server)
+
+		Verbose( "process_users: found user=%  server=%s" % ( user , server ))
+		add_user(user,server)
+
+		Verbose( "process_users: found alias=%s  user=%  server=%s" % ( alias, user , server ))
+		add_alias(alias ,user, server=server)
+
+
+		raw.flag=101
+		raw.modified_by=modified_by
+		raw.save()
+
+def process_user_aliasdomain():
+	###################################################
+	# loop over user: alias@domain
+	i=0
+
+	global modified_by
+
+	total=Raw.objects.filter(flag=USER__ALIAS_DOMAIN).count()
+	#print "processing:", total, "virtual users (without servers)"
+	for raw in Raw.objects.filter(flag=USER__ALIAS_DOMAIN):
+
+		Verbose( "USER__ALIAS_DOMAIN: raw='%s'" % raw )
+
+		i += 1
+		user = raw.left
+		(alias,domain) = raw.right.split('@')
+		server = domain
+
+		if user != alias:
+			mailbox = alias
+
+			Verbose( "process_user_aliasdomain: found (new?) server=%s" % server )
+			add_server(server)
+
+			Verbose( "process_user_aliasdomain: found (new?) domain=%s " %  domain )
+			add_domain(domain)
+
+			Verbose( "process_user_aliasdomain: found user=%s mailbox=%s server=%s" % ( user , mailbox, server ))
+			add_user(user,domain,mailbox )
+
+			Verbose( "process_user_aliasdomain: found alias=%s user=%s" % ( user , user ))
+			add_alias(user,user)
+
+		else:
+
+			Verbose( "process_user_aliasdomain: found (new?) server=%s" % server )
+			add_server(server)
+
+			Verbose( "process_user_aliasdomain: found (new?) domain=%s " %  domain )
+			add_domain(domain)
+
+			Verbose( "process_user_aliasdomain: found user=%s domain=%s " % ( user , domain ))
+			add_user(user,domain)
+
+			Verbose( "process_user_aliasdomain: found alias=%s user=%s" % ( user , user ))
+			add_alias(user,user)
+
+			Verbose( "process_user_aliasdomain: found alias=%s domain=%s user=%s" % ( alias, domain , user ))
+			add_alias(alias,user,domain)
+
+			Verbose( "process_user_aliasdomain: found alias=%s user=%s" % ( alias , user ))
+			add_alias(alias,user)
+
+		if  i % 5000 == 0:
+			print i
+
+		raw.flag=109
+		raw.modified_by=modified_by
+		raw.save()
+
+def process_aliasdomain_aliasdomain():
+	###################################################
+	# loop over user: alias@domain
+	global modified_by
+
+	for raw in Raw.objects.filter(flag=ALIAS_DOMAIN__ALIAS_DOMAIN):
+		Verbose("process_aliasdomain_aliasdomain: (ALIAS_DOMAIN__ALIAS_DOMAIN): raw='%s' " % raw)
+		(alias,domain) = raw.left.split('@')
+		(user,server) = raw.right.split('@')
+
+		if server == "tollgroup.com" or server == 'toll.com.au' or server == 'tollmermaid.com.au' or  server == 'tolltransitions.com.au' :
+			Verbose( "process_aliasdomain_aliasdomain: Entry points to aliases file")
+			Verbose( "process_aliasdomain_aliasdomain: %s@%s points at %s" % (alias,domain,user))
+			Verbose( "process_aliasdomain_aliasdomain: changing user=%s, server=%s to user=%s" % ( user, server , user))
+			Verbose( "process_aliasdomain_aliasdomain: This entry='%s'" % ( raw ))
+			raw.right=user
+			raw.flag=ALIAS_ALIAS
+			raw.modified_by=modified_by
+			raw.save()
+			continue
+
+		Verbose( "process_aliasdomain_aliasdomain: alias=%s domain=%s user=%s server=%s" % ( alias, domain, user, server ) )
+
+		Verbose( "process_aliasdomain_aliasdomain: adding server server=%s" % ( server ))
+		add_server(server)
+
+		Verbose( "process_aliasdomain_aliasdomain: adding domain=%s" % ( domain ))
+		add_domain(domain)
+
+		Verbose( "process_aliasdomain_aliasdomain: adding user=%s server=%s" % ( user, server ))
+		add_user(user,server)
+
+		Verbose( "process_aliasdomain_aliasdomain: adding alias=%s domain=%s user=%s server=%s" % ( alias, domain, user, server ))
+		add_alias(alias,user,domain,server)
+
+		raw.flag=112
+		raw.modified_by=modified_by
+		raw.save()
+
+#-----------------------------------------------------------------------------------------------------------------------
+def process_vutusers():
+	###################################################
+	# loop over alias@domain: user
+	global modified_by
+
+	Verbose( "process_vutusers: ALIAS_DOMAIN__USER entries in database=%d" % Raw.objects.filter(flag=ALIAS_DOMAIN__USER).count() )
+
+	for raw in Raw.objects.filter(flag=ALIAS_DOMAIN__USER):
+		Verbose( "\nRAW(ALIAS_DOMAIN__USER): raw='%s' " % raw )
+		(user) = raw.right.split('@')[0]
+		(alias,domain) = raw.left.split('@')
+
+
+		# If we done have the user inthe database then
+		# move on to the next, as we dont know what server
+		if not is_user(user):
+			# Let the importer know that we dont have a user to work with 
+			Verbose("process_vutusers: user=%s is not really a user " % user )
+			continue
+
+		Verbose("process_vutusers: found domain=%s" % domain )
+		add_domain(domain)
+		Verbose("process_vutusers: found alias=%s domain=%s user=%s" % (alias, user, domain ))
+		add_alias(alias,user,domain)
+
+		raw.flag=110
+		raw.modified_by=modified_by
+		raw.save()
+
+#-----------------------------------------------------------------------------------------------------------------------
+def process_vutusers_ws():
+	###################################################
+	# loop over alias@domain: user@server
+	i=0
+	global modified_by
+	total=Raw.objects.filter(flag=ALIAS_DOMAIN__USER_SERVER).count()
+	#print "processing:", total, "virtual users (with servers)"
+	for raw in Raw.objects.filter(flag=ALIAS_DOMAIN__USER_SERVER):
+		i += 1
+		Verbose( "ALIAS_DOMAIN__USER_SERVER: raw='%s' " % raw)
+		(alias,domain) = raw.left.split('@')
+		(user,server) = raw.right.split('@')
+
+		Verbose( "process_vutusers_ws: alias=%s domain=%s user=%s server=%s" % ( alias, domain, user, server ))
+
+		Verbose( "process_vutusers_ws: adding server server=%s" % ( server ) )
+		add_server(server)
+
+		Verbose( "process_vutusers_ws: adding domain=%s" % ( domain ))
+		add_domain(domain)
+
+		Verbose( "process_vutusers_ws: adding user=%s server=%s" % ( user, server ))
+		add_user(user,server)
+
+		Verbose( "process_vutusers_ws: adding alias=%s domain=%s user=%s server=%s" % ( alias, domain, user, server ))
+		add_alias(alias,user,domain,server)
+
+		raw.flag=111
+		raw.modified_by=modified_by
+		raw.save()
+
+#-----------------------------------------------------------------------------------------------------------------------
+def process_alias():
+	###################################################
+	# loop over alias: user
+	global modified_by
+
+	total=Raw.objects.filter(flag=ALIAS_USER).count()
+	print "processing aliases:", total, "aliases"
+
+	for raw in Raw.objects.filter(flag=ALIAS_USER):
+		(alias,user) = raw.left,raw.right
+
+		Verbose( "Found alias=%s user=%s" % ( alias, user) )
+		rc = add_alias(alias,user)
+
+		if rc == 1:
+			raw.flag=ALIAS_ALIAS
+			raw.modified_by=modified_by
+			raw.save()
+		else:
+			raw.flag=102	# FLAG=100 - Alais for User not in system
+			raw.modified_by=modified_by
+			raw.save()
+		
+#-----------------------------------------------------------------------------------------------------------------------
+def process_devnull():
+	###################################################
+	# loop over user/alias: /dev/null
+	global modified_by
+
+	for raw in Raw.objects.filter(flag=ALIAS_DEVNULL):
+		Verbose( "ALIAS_DEVNULL: raw='%s'" % ( raw ) )
+
+		alias = raw.left
+		user = "devnull"
+
+		try:
+			# Set the mail box for /dev/null to a magic mailbox
+			# Then treat all devnull's are normal users.
+			# It is cleaned up later in the generation for VUT / Aliases
+			raw.right	= "devnull@smptex.toll.com.au"
+			raw.flag	= 1
+			raw.modified_by=modified_by
+			raw.save()
+		except Exception:
+			Warning( "process_devnull: Unable to save devnull entry raw='%s'" % ( raw ))
+
+	return Raw.objects.filter(flag=ALIAS_DEVNULL).count()
+
+#-----------------------------------------------------------------------------------------------------------------------
+def process_distro():
+	###################################################
+	# Make distro lists as unmanageable
+	global modified_by
+
+	for raw in Raw.objects.filter(flag=DISTRO_LIST):
+		raw.flag="202"
+		raw.modified_by=modified_by
+		raw.save()
+
+#---------------------------------------------------------------------------------------------------------------
+def process_scripts():
+	###################################################
+	# loop over alias: user
+	global modified_by
+
+	#-------------------------------------------------
+	for raw in Raw.objects.filter(flag=ALIAS_SCRIPT):
+		(alias,script) = raw.left,raw.right
+
+		try:
+			alias_o = Alias.objects.get(alias=alias)
+		except:
+			Waring( "process_scripts: alias=%s not found" % alias)
+			continue
+		rc = add_script(alias_o,script)
+
+		if rc == 0:
+			raw.flag=104
+			raw.modified_by=modified_by
+			raw.save()
+			continue
+
+	#-------------------------------------------------
+	for raw in Raw.objects.filter(flag=6):
+		(alias,script) = raw.left,raw.right
+
+		try:
+			alias_o = Alias.objects.get(alias=alias)
+		except:
+			print "ALIAS: not found", alias
+			continue
+		rc = add_script(alias_o,script)
+
+		if rc == 0:
+			raw.flag=106
+			raw.modified_by=modified_by
+			raw.save()
+			continue
+
+	#-------------------------------------------------
+	for raw in Raw.objects.filter(flag=7):
+		(alias,script) = raw.left,raw.right
+
+		try:
+			alias_o = Alias.objects.get(alias=alias)
+		except:
+			print "ALIAS: not found", alias
+			continue
+		
+		rc = add_script(alias_o,script)
+
+		if rc == 0:
+			raw.flag=107
+			raw.modified_by=modified_by
+			raw.save()
+			continue
+
+def process_aliasalias():
+	###################################################
+	# loop over alias: user
+	i=0
+	global modified_by
+
+	print "-"*60
+	print "\t\tProcessing alias-to-alias"
+	print "-"*60
+
+
+	for raw in Raw.objects.filter(flag=ALIAS_ALIAS):
+		Verbose( "")
+		Verbose( "process_aliasalias: ALIAS_ALIAS raw='%s' " % raw )
+		(l,r) = raw.left,raw.right
+		alias = ""
+		domain = ""
+		user = ""
+
+		Verbose( "process_aliasalias: left=%s right=%s" % ( l, r ) )
+
+		if '@' in l:
+			( alias, domain) = l.split('@')
+			Verbose( "process_aliasalias: alias=%s domain=%s" % ( alias, domain ) )
+			Verbose( "process_aliasalias: found domain=%s" % ( domain ))
+			add_domain(domain)
+
+		Verbose( "process_aliasalias: Checking if right=%s is a user" % r )
+		# is the right a user?
+		if is_user(r):
+			if domain:
+				Verbose( "process_aliasalias: adding alias=%s domain=%s user=%s" % ( alias, domain , r ) )
+				add_alias(alias, r ,domain=domain)
+			else:
+				Verbose( "process_aliasalias: adding alias=%s to user=%s" % ( l , r ))
+				add_alias(l,r)
+
+			raw.flag=108
+			raw.modified_by=modified_by
+			raw.save()
+		else:
+			Verbose( "process_aliasalias: looks like right=%s is an alias aswell" % ( r ))
+			user = alias_to_user(r)
+			Verbose( "process_aliasalias: found this user=%s from this alias right=%s" % ( user, r ))
+			if user:
+				if domain:
+					Verbose( "process_aliasalias: adding alias=%s domain=%s user=%s" % ( alias, domain , user ))
+					add_alias(alias, user ,domain=domain)
+				else:
+					Verbose( "process_aliasalias: adding alias=%s to user=%s" % ( l , user ))
+					add_alias(l,user)
+
+				raw.flag=108
+				raw.modified_by=modified_by
+				raw.save()
+	
+	total=Raw.objects.filter(flag=ALIAS_ALIAS).count()
+	Warning("process_aliasalias: Still have %d records left unprocessed" % total)
+	return total
+
+################################################################
+def add_domain(domain):
+	""" ADD a domain to the database, with the default values """
+	global modified_by
+	Verbose( "add_domain: trying to add new domain=%s" % domain )
+	try:
+		domain_o = Domain(domain=domain,description="AUTO")
+		domain_o.modified_by=modified_by
+		domain_o.save()
+		Verbose( "add_domain: added new domain=%s" % domain )
+		return 0
+	except MySQLdb.Warning:
+		Warning( "Default values not found" )
+		return 0
+	except MySQLdb.IntegrityError:
+		Verbose( "add_domain: domain=%s already in system" % domain )
+		return 1
+	except utils.IntegrityError:
+		Verbose( "add_domain: domain=%s already in system" % domain )
+		return 1
+################################################################
+def add_server(server):
+	""" ADD a server to the database, with the default values """
+	global modified_by
+	try:
+		Verbose( "add_server: trying to add new server=%s " % server )
+		server_o = Server(servername=server,description="AUTO")
+		server_o.modified_by=modified_by
+		server_o.save()
+		Verbose( "add_server: added new server=%s " % server )
+		return 0
+	except MySQLdb.Warning:
+		Warning( "Default values not found" )
+		return 0
+	except MySQLdb.IntegrityError:
+		Verbose( "add_server: server=%s already in database. " % server )
+		return 1
+	except utils.IntegrityError:
+		Verbose( "add_server: server=%s already in database. " % server )
+		return 1
+		
+
+################################################################
+def not_user(user):
+	"Return true if the 'user' is not really a user"
+	
+
+	if user in user_exception_list:
+		return False
+
+	if '.' in user:
+		print user,"is_userformat: False - has '.'"
+		return True
+
+	if '_' in user:
+		print user,"is_userformat: False - has '_'"
+		return True
+
+	if '@' in user:
+		print user,"is_userformat: False - has '@'"
+		return True
+
+	if '-' in user:
+		print user,"is_userformat: False - has '-'"
+		return True
+
+	return False
+
+################################################################
+def is_user(user):
+	Verbose( "is_user: checking if %s is a user" % ( user ) )
+	try:
+		Verbose( "is_user: trying to get user=%s from the database" % (user) )
+		user_o = User.objects.get(user=user)
+		Verbose( "is_user: TRUE Succesfuly, user=%s is in the database" % ( user_o ))
+		return True
+	except Exception:
+		Verbose( "is_user: FALSE user=%s not in user table" % user )
+		return False
+
+	return False
+
+################################################################
+def alias_to_user(alias):
+	alias_o = None
+	user_o = None
+
+	Verbose( "alias_to_user: checking if alias(%s) is an alias" % ( alias ) )
+
+	try:
+		#alias_o = Alias.objects.get(alias=alias)
+	
+		for user_match in Alias.objects.filter(alias=alias):
+			if not alias_o:
+				alias_o = user_match
+				continue
+
+			if not alias_o.user == user_match.user:
+				raise Exception("alias_to_user: found more than one user that matches alias='%s'" % alias )
+		
+		Verbose( "alias_to_user: found matching alias=%s in alias table" %  ( alias_o ) )
+		user_o = alias_o.user
+		Verbose( "alias_to_user: found matching user=%s for alias=%s" %  ( user_o, alias_o ) )
+		return "%s" % (user_o)
+	except Exception as e:
+		Verbose( "alias_to_user: alias=%s not in aliases table" %  ( alias ))
+		Verbose( "alias_to_user: %s " % e )
+		return False
+	return False
+################################################################
+def add_script(alias,script):
+	global modified_by
+
+	print alias,"---",script
+	script_o = Script(alias=alias,script=script)
+	try:
+		script_o.modified_by=modified_by
+		script_o.save()
+		print "SCRIPT:",script,"adding"
+		return 0
+	except MySQLdb.IntegrityError:
+		return 1
+	
+	
+################################################################
+def add_user(user="",server="",mailbox=""):
+
+	global modified_by
+	if mailbox:
+		Verbose( "add_user: user=%s has a Custom mailbox: %s@%s" % ( user, mailbox, server) )
+	else:
+		mailbox = user
+	
+	Verbose( "add_user: user=%s server=%s mailbox=%s" % ( user,server,mailbox ) )
+
+	# Grab the server object from the database.
+	server_o = Server.objects.get(servername=server)
+
+	# Check if the user is alreadty in the system, before tying to add the new user.
+
+	Verbose( "add_user: Trying to find user=%s server=%s in database" % (user, server) )
+	try:
+		user_db_obj = User.objects.get(user=user, servername=server_o)
+		Verbose( "add_user: User already found in database user=%s server=%s" % ( user_db_obj.user , user_db_obj.servername ) )
+		return 0
+	except utils.IntegrityError:
+		Verbose( "add_user: Unable to find user=%s server=%s in database" % ( user, server ) )
+	except Exception:
+		Verbose( "add_user: Unable to find user=%s server=%s in database" % ( user, server ) )
+
+	user_o = User(user=user,name="AUTO: aliases",servername=server_o,mailbox=mailbox)
+	
+	# Are you sure this is a user?
+	if '.' in user:
+		Warning( "add_user: user=%s servername=%s has a dot in there name." % ( user , server_o ))
+
+	# Are you sure this is a user?
+	if '_' in user:
+		Warning( "add_user: user=%s servername=%s has a underscore in there name." % ( user , server_o ) )
+	
+	# Try to add the the user to the database if we are sure that the user
+	# is a user... and not an alias.....
+	try:
+		Verbose( "add_user: user=%s server=%s trying to save" % ( user, server ) )
+		user_o.modified_by=modified_by
+		user_o.save()
+		Verbose( "add_user: user=%s server=%s added" % ( user, server ) )
+		return 0
+	except MySQLdb.IntegrityError:
+		Warning( "MySQLdb.IntegrityError: user=%s already in the system" % user )
+		return 1
+	except utils.IntegrityError:
+		Warning( "utils.IntegrityError: user=%s already in the system" % user )
+		return 1
+	
+
+################################################################
+def add_alias(alias,user,domain="tollgroup.com",server=""):
+
+        if '_' in alias:
+               return 0
+
+	global modified_by
+	Verbose( "add_alias: alias=%s user=%s domain=%s server=%s" % ( alias,user,domain,server ) )
+	domain_o= Domain.objects.get(domain=domain)
+	server_o= ""
+	user_o  = ""
+
+	#----------------------------------------------------------------------------
+	if not server == '*' and server:
+		Verbose( "add_alias: Have a server='%s'" % server )
+		Verbose( "add_alias: Will match alias(%s@%s) to user(%s@%s)" % ( alias,domain, user , server ))
+		server_o=Server.objects.get(servername=server)
+		try:
+			Verbose( "add_alias: Trying lookup of user(%s@%s)" % ( user , server ))
+			user_o = User.objects.filter(user=user).filter(servername=server_o)[0]
+		except utils.IntegrityError:
+			Verbose( "add_alias: lookup failed for user(%s@%s)" % ( user , server ) )
+		except Exception:
+			Warning( "add_alias: Unkown Exception - lookup failed for user(%s@%s)" % ( user , server ) )
+			return 1
+	else:
+		Verbose( "add_alias: missing server for user(%s)" % (user))
+		server="*"
+		Verbose( "add_alias: Will match alias(%s@%s) to (%s@*)" % ( alias,domain, user))
+		try:
+			Verbose( "add_alias: Trying lookup of user(%s@%s)" % ( user , server ))
+			user_o = User.objects.get(user=user)
+		except utils.IntegrityError:
+			Verbose( "add_alias: lookup failed for user(%s@%s)" % ( user , server ) )
+		except Exception:
+			Warning( "add_alias: lookup failed for user(%s@%s)" % ( user , server ) )
+			return 1
+	#----------------------------------------------------------------------------
+
+	alias_o = Alias(alias=alias, user=user_o, domain=domain_o)
+	try:
+		Verbose( "add_alias: Trying to add alias(%s@%s) to user (%s@%s)" % ( alias,domain,user,user_o.servername ))
+		alias_o.modified_by=modified_by
+		alias_o.save()
+		Verbose( "add_alias: added alias(%s@%s) to user (%s@%s)" % ( alias,domain,user_o,user_o.servername ))
+	except MySQLdb.IntegrityError:
+		Warning( "add_alias: duplicate alias(%s@%s), not added to system" % ( alias,domain ))
+		return 2
+	except utils.IntegrityError:
+		Warning( "add_alias: duplicate alias(%s@%s), not added to system" % ( alias,domain ))
+	except Exception: 
+		Warning( "Unknown error with adding alias=%s to user=%s" % (alias, user) )
+		raise e
+
+	# If we currently dont have a name of the user and we have an
+	# alias with a space... then use the alias to build the name
+	if "AUTO" in user_o.name and '.' in alias:
+		user_o.name = alias.replace('.',' ')
+		user_o.modified_by=modified_by
+		user_o.save()
+
+	# If we currently dont have a name of the user and we have an
+	# alias with a space... then use the alias to build the name
+	if "AUTO" in user_o.name and '_' in alias:
+		user_o.name = alias.replace('_',' ')
+		user_o.modified_by=modified_by
+		user_o.save()
+
+#	if domain == "tollgroup.com":
+#		add_alias(alias,user,"toll.com.au",server)
+
+	return 0
+
+#-------------------------------------------------------------------------------
+#  MAIN
+#-------------------------------------------------------------------------------
+def main():
+	# Grab the command line arguments
+	options = command_options( "usage: %prog [vxch] -i /path/to/inputfile\nRun this with --help for more information." )
+
+	# If -X/--execute was an option, then run the script.
+	if options.execute:
+		execute(options)
+
+#-------------------------------------------------------------------------------
+#  command_options
+#-------------------------------------------------------------------------------
+def command_options(usage_message):
+	parser = optparse.OptionParser(usage_message, version="$Id$\n$HeadURL$")
+	parser.add_option("-q", "--quiet", action="store_true", dest="quiet",default=False, help="Run without any stdout, use this if running from cron")
+	parser.add_option("-v", "--verbose", action="store_true", dest="verbose", default=False, help="Run without extra stdout, used for debugging")
+	parser.add_option("-x", "--execute", action="store_true", dest="execute", default=False, help="Execute the script")
+	parser.add_option("-c", "--clean", action="store_true", dest="clean", default=False, help="Delete the current database")
+
+	user_options = optparse.OptionGroup(parser, "User options","Customized Options")
+	user_options.add_option("-i", "--input", dest="file", metavar="FILE", help="The input file (current aliases, vut or delta) that will be used")
+	parser.add_option_group(user_options)
+
+	if len(sys.argv) == 0:
+		parser.error("Missing options.")
+
+	# Process command line option rules
+	(options, args) = parser.parse_args()
+
+	print >> sys.stderr, "Importing files from ", options.file 
+
+	if len(args) > 1:
+		#Display error if there are no arguments given
+		parser.error("Invalid options.")
+
+	if options.quiet:
+		#If the quite option is sent redirect stdout to devnull
+		sys.stdout = open(os.devnull, 'w')
+
+	if not options.execute:
+		parser.error("Execute flag is missing.")
+
+	return options
+
+#-------------------------------------------------------------------------------
+# Clean
+#-------------------------------------------------------------------------------
+def clean(options):
+
+	Verbose("Removing all enries from the database.")
+	clean_db()		# Remove all entries form the database
+
+	Verbose("Will Remove all entries from the database, raw table.")
+	clean_raw()		# Remove the entires from the raw table
+
+	Verbose("Create a tollgroup.com domain, as a placeholder.")
+	clean_domain()		# Create the tollgroup.com domain 
+
+#-------------------------------------------------------------------------------
+# Execute
+#-------------------------------------------------------------------------------
+def execute(options):
+	global modified_by
+
+	Verbose("Executing the script in write mode")
+	
+	if options.clean:
+		clean(options)
+	
+	if options.file is None:
+		return 0
+
+	if os.path.exists(options.file):
+		modified_by = "vutman_import.py imported: %s" % options.file
+		VerbFlag = True
+		import_to_leftright(options.file)	# Import the file into the "raw" table
+		process_leftright()					# Process each of the record types in the raw table.
+		Verbose("Completed Import")
+	else:
+		# If we can't find the input file, its Fatal...
+		Fatal("Unable to find import file=%s" % options.file)
+
+#-------------------------------------------------------------------------------
+# Direct Call
+#-------------------------------------------------------------------------------
+if __name__ == "__main__":
+	main()
+
+############################################################
+# END
+############################################################
+
+def add_alias_rc(alias,user,domain="tollgroup.com",server=""):
+
+	if ',' in alias:
+		for pending_alias in alias.split(','):
+			add_alias_rc(pending_alias,user,domain,server)
+		return 0
+
+	global modified_by
+	Verbose( "add_alias: alias=%s user=%s domain=%s server=%s" % ( alias,user,domain,server ) )
+	domain_o= Domain.objects.get(domain=domain)
+	server_o= ""
+	user_o  = ""
+
+	#----------------------------------------------------------------------------
+	if not server == '*' and server:
+		Verbose( "add_alias: Have a server='%s'" % server )
+		Verbose( "add_alias: Will match alias(%s@%s) to user(%s@%s)" % ( alias,domain, user , server ))
+		server_o=Server.objects.get(servername=server)
+		try:
+			Verbose( "add_alias: Trying lookup of user(%s@%s)" % ( user , server ))
+			user_o = User.objects.filter(user=user).filter(servername=server_o)[0]
+		except utils.IntegrityError:
+			raise Exception( "add_alias: lookup failed for user(%s@%s)" % ( user , server ) )
+			return 1
+		except Exception:
+			raise Exception( "add_alias: Unkown Exception - lookup failed for user(%s@%s)" % ( user , server ) )
+			return 1
+	else:
+		Verbose( "add_alias: missing server for user(%s)" % (user))
+		server="*"
+		Verbose( "add_alias: Will match alias(%s@%s) to (%s@*)" % ( alias,domain, user))
+		try:
+			Verbose( "add_alias: Trying lookup of user(%s@%s)" % ( user , server ))
+			user_o = User.objects.get(user=user)
+		except utils.IntegrityError:
+			raise Exception( "add_alias: lookup failed for user(%s@%s)" % ( user , server ) )
+			return 1
+		except Exception:
+			raise Exception( "add_alias: lookup failed for user(%s@%s)" % ( user , server ) )
+			return 1
+	#----------------------------------------------------------------------------
+
+	alias_o = Alias(alias=alias, user=user_o, domain=domain_o)
+	try:
+		Verbose( "add_alias: Trying to add alias(%s@%s) to user (%s@%s)" % ( alias,domain,user,user_o.servername ))
+		alias_o.modified_by=modified_by
+		alias_o.save()
+		#Exception( "add_alias: added alias(%s@%s) to user (%s@%s)" % ( alias,domain,user_o,user_o.servername ))
+	except MySQLdb.IntegrityError:
+		raise Exception( "add_alias: duplicate alias(%s@%s), not added to system" % ( alias,domain ))
+		return 2
+	except utils.IntegrityError:
+		raise Exception( "add_alias: duplicate alias(%s@%s), not added to system" % ( alias,domain ))
+		return 2
+	except Exception as e:
+		raise Exception( "Unknown error with adding alias=%s to user=%s -- %s" % (alias, user, str(e)) )
+
+	# If we currently dont have a name of the user and we have an
+	# alias with a space... then use the alias to build the name
+	if "AUTO" in user_o.name and '.' in alias:
+		user_o.name = alias.replace('.',' ')
+		user_o.modified_by=modified_by
+		user_o.save()
+
+	# If we currently dont have a name of the user and we have an
+	# alias with a space... then use the alias to build the name
+	if "AUTO" in user_o.name and '_' in alias:
+		user_o.name = alias.replace('_',' ')
+		user_o.modified_by=modified_by
+		user_o.save()
+
+	if domain == "tollgroup.com":
+		add_alias(alias,user,"toll.com.au",server)
+
+	return 0

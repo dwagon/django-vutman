@@ -1,0 +1,29 @@
+#!/usr/bin/env sh
+#########################
+export PATH=/usr/local/bin:$PATH
+echo `date`" script started #######################"
+echo `date`" running alias_changes.ksh"
+ssh root@foobar "/usr/local/bin/alias_changes.ksh -x" > /tmp/aliases_updates
+echo `date`" running vut_changes.ksh"
+ssh root@foobar "/usr/local/bin/vut_changes.ksh -x" > /tmp/vut_updates
+
+if ! `unicode.py /tmp/aliases_updates`; then 
+  echo "Please invesitgate unicode errors in the /tmp/aliases_updates file, for more information please see the file /tmp/aliases_updates-unicode_errors.log" > x |uuencode "/tmp/aliases_updates-unicode_errors.log" aliases_updates-unicode_errors.log | cat x - | mailx -s "aliases_updates unicode error"  Unix-Infosys@tollgroup.com && rm /tmp/aliases_updates-unicode_errors.log
+  exit 1
+elif ! `unicode.py /tmp/vut_updates`; then
+  echo "Please invesitgate unicode errors in the /tmp/vut_updates file, for more information please see the file /tmp/vut_updates-unicode_errors.log" > x |uuencode "/tmp/vut_updates-unicode_errors.log" vut_updates-unicode_errors.log | cat x - | mailx -s "vut_updates unicode error" Unix-Infosys@tollgroup.com && rm /tmp/vut_updates-unicode_errors.log
+  exit 1
+fi
+ 
+echo `date`" running vutman_import.py 4 aliases"
+/usr/local/lib/python2.7/site-packages/vutman/vutman_import.py -xi /tmp/aliases_updates
+echo `date`" running vutman_import.py 4 vuts"
+/usr/local/lib/python2.7/site-packages/vutman/vutman_import.py -xi /tmp/vut_updates
+echo `date`" running label_accounts.py"
+
+/usr/local/lib/python2.7/site-packages/vutman/mail/label_accounts.py > /dev/null
+echo `date`" script finished ######################"
+
+#/usr/local/lib/python2.7/site-packages/vutman/mail/mailservers.py --label
+
+
