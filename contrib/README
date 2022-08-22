@@ -1,0 +1,3 @@
+start.sh - start the gunicorn server
+vutman.service - systemd service file; should be copied to /etc/systemd/system
+vutman.http_conf - apache config for vutman
