@@ -1,6 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """ Generate a virtual user table from Vutman """
 # pylint: disable=no-member, wrong-import-position
+import argparse
 import os
 import os.path
 import sys
@@ -29,13 +30,15 @@ def generate_alias():
 
 
 ##############################################################################
-def generate_vut():
+def generate_vut(fname=None):
     """TODO"""
-    with open(get_python_lib() + "/vutman/media/virtusertable.txt", "w", encoding="utf-8") as vut:
+    if fname is None:
+        fname = os.path.join(get_python_lib(), "vutman/media/virtusertable.txt")
+    with open(fname, "w", encoding="utf-8") as vut:
         vut.write("###############################\n")
         vut.write("# Virutal User Table:\n")
         vut.write("# For all Domains\n")
-        vut.write(f"# Generated at : {time.ctime()}\n")
+        vut.write(f"# Generated at: {time.ctime()}\n")
         vut.write("###############################\n")
 
         for alias in (
@@ -66,15 +69,26 @@ def generate_smtpex_vut():
 
 
 ##############################################################################
+def parse_args():
+    """ Parse command line arguments """
+    parser = argparse.ArgumentParser(description='Generate virtual user table from VUTMAN')
+    parser.add_argument('--output', help="Destination file")
+    parser.add_argument("command", help="What to generate")
+    args = parser.parse_args()
+    return args
+
+
+##############################################################################
 def main():
     """ Main """
-    if sys.argv[1] == "vut":
-        generate_vut()
+    args = parse_args()
+    if args.command == "vut":
+        generate_vut(args.output)
 
-    if sys.argv[1] == "alias":
+    if args.command == "alias":
         generate_alias()
 
-    if sys.argv[1] == "smptex":
+    if args.command == "smptex":
         generate_smtpex_vut()
 
 
