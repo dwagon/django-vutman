@@ -129,15 +129,6 @@ class RawData:      # pylint: disable=too-few-public-methods
 
 
 # -------------------------------------------------------------------------------
-def update_rawdb(dbitem: RawData, **kwargs) -> None:
-    """ Update an entry to the rawdb """
-    if "flag" in kwargs:
-        dbitem.flag = kwargs.get("flag")
-    if "right" in kwargs:
-        dbitem.right = kwargs.get("right")
-
-
-# -------------------------------------------------------------------------------
 def add_to_rawdb(left: str, right: str, flag: int) -> None:
     """ Add an entry to the rawdb """
     RAWDB.append(RawData(left, right, flag))
@@ -159,18 +150,18 @@ def left_right(line: str, flag: int = 0) -> None:
 def check_file_line(line: str) -> bool:
     """ Check the input line for basic sanity
     Return the empty string if the line is bad otherwise return the modified line """
-    # Dont waste time on comments
+    retval = ""
+    # Don't waste time on comments
     if line.startswith("#"):
-        return ""
+        return retval
 
     # Replace bad strings in import line
     line = line.replace("\n", "")
     line = line.replace(" ", "\t")
     line = line.replace("\xB2", "")
 
-    # Keep a count for the uncomming loop, i dont want to get stuck in there.
-    loop_count = 0
     # Replace multi tabs with a single tab.
+    loop_count = 0
     while line.count("\t") > 1:
         _verbose(f"import_to_leftright: replacing TABTAB with TAB in line='{line}'")
         line = line.replace("\t\t", "\t")
@@ -188,21 +179,21 @@ def check_file_line(line: str) -> bool:
     # Replace any left of spaces with NULL
     line = line.replace(" ", "")
     line = line.strip()
-
     _verbose(f"import_to_leftright: The line now looks like this line='{line}'")
+
     # Dont waste time on blank lines
     if not line:
-        return ""
+        retval = ""
 
     # Ignore lines that start with an '@'
-    if line.startswith("@"):
+    elif line.startswith("@"):
         unhandled_import(line, "Lines starts with an @", ERROR_ALIASFOO)
-        return ""
+        retval = ""
 
     # Dont try to handle the following vut-foo
-    if "%" in line:
+    elif "%" in line:
         unhandled_import(line, "Lines starts with an %", ERROR_VUTFOO)
-        return ""
+        retval = ""
 
     # Ignore lines for postmaster, we add that for every domain
     # When we generate these anyway.
@@ -211,19 +202,18 @@ def check_file_line(line: str) -> bool:
     #   return ""
 
     # Cleanup syntax errors,
-    #############################################
     # To many cols is bad...
-    if line.count(":") > 1:
+    elif line.count(":") > 1:
         unhandled_import(line, "Too many ':'s", ERROR_MANY_COLS)
-        return ""
+        retval = ""
 
     # Not enough cols is also bad..
-    if ":" not in line:
+    elif ":" not in line:
         unhandled_import(line, "Too many ':'s", ERROR_NOCOLS)
-        return ""
-
-    line = line.lower()
-    return line
+        retval = ""
+    else:
+        retval = line.lower()
+    return retval
 
 
 # -------------------------------------------------------------------------------
@@ -613,8 +603,8 @@ def process_vutusers_ws() -> None:
     for rawobj in get_raw_flag(ALIAS_DOMAIN__USER_SERVER):
         i += 1
         _verbose(f"ALIAS_DOMAIN__USER_SERVER: raw='{rawobj}' ")
-        (alias, domain) = rawobj["left"].split("@")
-        (user, server) = rawobj["right"].split("@")
+        (alias, domain) = rawobj.left.split("@")
+        (user, server) = rawobj.right.split("@")
 
         _verbose("process_vutusers_ws: alias=%s domain=%s user=%s server=%s" % (alias, domain, user, server))
 
@@ -629,7 +619,6 @@ def process_vutusers_ws() -> None:
 
         _verbose(f"process_vutusers_ws: adding alias={alias} domain={domain} user={user} server={server}")
         add_alias(alias, user, domain, server)
-
         # Dougal - not sure what this value means
         # raw.flag = 111
 
@@ -654,22 +643,21 @@ def process_alias():
 # -------------------------------------------------------------------------------
 def process_devnull():
     """ loop over user/alias: /dev/null"""
-
     for rawobj in get_raw_flag(flag=ALIAS_DEVNULL):
         _verbose(f"ALIAS_DEVNULL: raw='{rawobj}'")
 
         # Set the mail box for /dev/null to a magic mailbox
         # Then treat all devnull's are normal users.
         # It is cleaned up later in the generation for VUT / Aliases
-        update_rawdb(rawobj, right="devnull@smptex.toll.com.au", flag=1)
+        rawobj.right = "devnull@smptex.toll.com.au"
+        rawobj.flag = 1
 
 
 # -------------------------------------------------------------------------------
 def process_distro():
-    # Make distro lists as unmanageable
+    """ Make distro lists as unmanageable """
     for raw in get_raw_flag(flag=DISTRO_LIST):
-        raw.flag = "202"
-        raw.save()
+        raw.flag = 202
 
 
 # -------------------------------------------------------------------------------
@@ -820,13 +808,10 @@ def alias_to_user(alias: str) -> str:
             alias_o = user_match
             continue
 
-        if not alias_o.user == user_match.user:
-            raise Exception("alias_to_user: found more than one user that matches alias='%s'" % alias)
-
-    _verbose("alias_to_user: found matching alias=%s in alias table" % (alias_o))
-    user_o = alias_o.user
-    _verbose(f"alias_to_user: found matching user={user_o} for alias={alias_o}")
-    return user_o
+        _verbose(f"alias_to_user: found matching alias={alias_o} in alias table")
+        user_o = alias_o.username
+        _verbose(f"alias_to_user: found matching user={user_o} for alias={alias_o}")
+        return user_o
 
 
 # -------------------------------------------------------------------------------
