@@ -57,14 +57,14 @@
 		</a>
 	      </li>
               <li>
-		<a href="/accounts/logout">
+                  <a href="{% url 'logout' %}">
 		  <span class="glyphicon glyphicon-user"></span>
 		  Logoff {{person|title}}
 		</a>
 	      </li>
 	      {% else %}
               <li>
-		<a href="/accounts/login">
+                  <a href="{% url 'login' %}">
 		  <span class="glyphicon glyphicon-user"></span>
 		  Login
 		</a>

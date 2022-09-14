@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/opt/vutman/bin/python
 """ Generate a virtual user table from Vutman """
 # pylint: disable=no-member, wrong-import-position
 import argparse
@@ -8,7 +8,7 @@ import sys
 import time
 from distutils.sysconfig import get_python_lib
 
-sys.path.append(os.path.join(get_python_lib(), "vutman/templates"))
+sys.path.append("/opt/vutman/django-vutman")
 os.environ["DJANGO_SETTINGS_MODULE"] = "emailwizard.settings"
 import django
 
@@ -33,7 +33,7 @@ def generate_alias():
 def generate_vut(fname=None):
     """TODO"""
     if fname is None:
-        fname = os.path.join(get_python_lib(), "vutman/media/virtusertable.txt")
+        fname = "/opt/vutman/media/virtusertable.txt")
     with open(fname, "w", encoding="utf-8") as vut:
         vut.write("###############################\n")
         vut.write("# Virutal User Table:\n")

@@ -135,7 +135,7 @@ class EmailUser(VutmanModel):
 
 
 class EmailAlias(VutmanModel):
-    alias_name = models.CharField(max_length=50)
+    alias_name = models.CharField(max_length=255)
     username = models.ForeignKey(EmailUser, on_delete=models.CASCADE)
     email_domain = models.ForeignKey(EmailDomain, on_delete=models.CASCADE)
     history = HistoricalRecords()
