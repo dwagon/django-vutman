@@ -6,6 +6,7 @@
     ProxyPreserveHost On
     Alias /static /opt/vutman/static
     ProxyPass /vutman http://127.0.0.1:8000/vutman
+    ProxyPass /accounts http://127.0.0.1:8000/accounts
     ProxyPass /admin http://127.0.0.1:8000/admin
     ProxyPassReverse /vutman http://127.0.0.1:8000/vutman
     <Directory /opt/vutman/static>
